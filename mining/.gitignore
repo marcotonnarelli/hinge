@@ -1,0 +1,8 @@
+node_modules/
+logs/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.env
+repos.jsonl

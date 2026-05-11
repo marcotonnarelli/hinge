@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# NPM
+.npm
+
+# IDE
+.idea
+.vscode
+
+# Build
+/dist
+*.tgz
+
+# Custom
+/logs
