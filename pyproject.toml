@@ -59,6 +59,7 @@ dbt = "hinge.stages.projection.dbt_projection:DbtProjection"
 # the same way.
 [project.entry-points."hinge.projection_specs"]
 co-commit-user-user      = "hinge.stages.projection.specs.co_commit_user_user:SPEC"
+co-edit-file-user-user   = "hinge.stages.projection.specs.co_edit_file_user_user:SPEC"
 dev-interaction          = "hinge.stages.projection.specs.dev_interaction:SPEC"
 follow-user-user         = "hinge.stages.projection.specs.follow_user_user:SPEC"
 fork-repo-repo           = "hinge.stages.projection.specs.fork_repo_repo:SPEC"

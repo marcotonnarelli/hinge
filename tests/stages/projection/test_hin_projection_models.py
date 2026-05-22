@@ -9,6 +9,7 @@ import pytest
 
 from hinge.stages.projection.dbt_projection import DbtProjection
 from hinge.stages.projection.specs.co_commit_user_user import SPEC as CO_COMMIT_USER_USER
+from hinge.stages.projection.specs.co_edit_file_user_user import SPEC as CO_EDIT_FILE_USER_USER
 from hinge.stages.projection.specs.dev_interaction import SPEC as DEV_INTERACTION
 from hinge.stages.projection.specs.follow_user_user import SPEC as FOLLOW_USER_USER
 from hinge.stages.projection.specs.fork_repo_repo import SPEC as FORK_REPO_REPO
@@ -66,6 +67,16 @@ def test_co_commit_user_user_rejects_missing_adapter_capability(tmp_path):
 
     output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
     assert "Missing capabilities: has_commits" in output
+
+
+def test_co_edit_file_user_user_rejects_missing_adapter_capability(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    with pytest.raises(subprocess.CalledProcessError) as exc_info:
+        DbtProjection().run(CO_EDIT_FILE_USER_USER, {}, view)
+
+    output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
+    assert "has_file_touches" in output
 
 
 def test_dev_interaction_reads_canonical_hin_views(tmp_path):
