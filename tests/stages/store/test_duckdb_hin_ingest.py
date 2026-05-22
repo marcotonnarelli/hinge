@@ -67,3 +67,11 @@ def test_scope_to_dataset_exposes_active_hin_views(tmp_path: Path) -> None:
 
         assert store._c().execute("SELECT count(*) FROM active_hin_nodes").fetchone()[0] == nodes
         assert store._c().execute("SELECT count(*) FROM active_hin_edges").fetchone()[0] == edges
+        assert store._c().execute("SELECT count(*) FROM active_contract_accounts").fetchone()[0] > 0
+        assert store._c().execute("SELECT count(*) FROM active_contract_repositories").fetchone()[0] > 0
+        assert store._c().execute("SELECT count(*) FROM active_contract_artifacts").fetchone()[0] > 0
+        assert store._c().execute("SELECT count(*) FROM active_contract_relations").fetchone()[0] > 0
+        assert (
+            store._c().execute("SELECT count(*) FROM active_contract_adapter_manifest").fetchone()[0]
+            == 1
+        )

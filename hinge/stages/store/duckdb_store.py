@@ -193,6 +193,26 @@ class DuckDBStore:
             f"SELECT type, src_id, dst_id, ts, attrs FROM edges WHERE dataset_id = '{dataset_id}'"
         )
         c.execute(
+            f"CREATE OR REPLACE VIEW active_contract_accounts AS "
+            f"SELECT * FROM contract_accounts WHERE dataset_id = '{dataset_id}'"
+        )
+        c.execute(
+            f"CREATE OR REPLACE VIEW active_contract_repositories AS "
+            f"SELECT * FROM contract_repositories WHERE dataset_id = '{dataset_id}'"
+        )
+        c.execute(
+            f"CREATE OR REPLACE VIEW active_contract_artifacts AS "
+            f"SELECT * FROM contract_artifacts WHERE dataset_id = '{dataset_id}'"
+        )
+        c.execute(
+            f"CREATE OR REPLACE VIEW active_contract_relations AS "
+            f"SELECT * FROM contract_relations WHERE dataset_id = '{dataset_id}'"
+        )
+        c.execute(
+            f"CREATE OR REPLACE VIEW active_contract_adapter_manifest AS "
+            f"SELECT * FROM contract_adapter_manifest WHERE adapter_run_id = '{dataset_id}'"
+        )
+        c.execute(
             f"CREATE OR REPLACE VIEW active_hin_nodes AS "
             f"SELECT * FROM hin_nodes WHERE dataset_id = '{dataset_id}'"
         )

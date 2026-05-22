@@ -31,6 +31,16 @@ sources:
           - name: dst_id
           - name: ts
           - name: attrs
+      - name: active_contract_accounts
+        description: "Adapter contract accounts for the active dataset_id."
+      - name: active_contract_repositories
+        description: "Adapter contract repositories for the active dataset_id."
+      - name: active_contract_artifacts
+        description: "Adapter contract artifacts for the active dataset_id."
+      - name: active_contract_relations
+        description: "Adapter contract relations for the active dataset_id."
+      - name: active_contract_adapter_manifest
+        description: "Adapter manifest/capabilities for the active dataset_id."
       - name: active_hin_nodes
         description: "Canonical HIN node view from HIN_DBT_DESIGN.md, filtered to the active dataset_id."
         columns:
