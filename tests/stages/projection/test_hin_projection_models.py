@@ -9,6 +9,7 @@ import pytest
 
 from hinge.stages.projection.dbt_projection import DbtProjection
 from hinge.stages.projection.specs.dev_interaction import SPEC as DEV_INTERACTION
+from hinge.stages.projection.specs.follow_user_user import SPEC as FOLLOW_USER_USER
 from hinge.stages.projection.specs.fork_repo_repo import SPEC as FORK_REPO_REPO
 from hinge.stages.projection.specs.issue_co_participation import SPEC as ISSUE_CO_PARTICIPATION
 from hinge.stages.projection.specs.pr_author_reviewer import SPEC as PR_AUTHOR_REVIEWER
@@ -92,6 +93,16 @@ def test_dev_interaction_rejects_missing_adapter_capability(tmp_path):
 
     output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
     assert "Missing capabilities: has_pr_reviews" in output
+
+
+def test_follow_user_user_rejects_missing_adapter_capability(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    with pytest.raises(subprocess.CalledProcessError) as exc_info:
+        DbtProjection().run(FOLLOW_USER_USER, {}, view)
+
+    output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
+    assert "Missing capabilities: has_follows" in output
 
 
 def test_fork_repo_repo_slices_native_fork_edges(tmp_path):
