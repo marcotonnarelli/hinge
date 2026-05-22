@@ -67,14 +67,6 @@
 
 WITH
 
-contribution_edges AS (
-    {{ slice_edges(
-        edge_types=['opened', 'reviewed', 'merged', 'commented_on', 'review_commented_on', 'pushed'],
-        source_types=['user'],
-        target_types=['artifact']
-    ) }}
-),
-
 contains_edges AS (
     {{ slice_edges(
         edge_types=['contains'],
@@ -88,11 +80,11 @@ contains_edges AS (
 -- We join on canonical HIN node ids to traverse the graph.
 user_repo AS (
     SELECT DISTINCT
-        ue.source_node_id AS user_id,
+        ue.left_node_id AS user_id,
         ce.source_node_id AS repo_id
-    FROM contribution_edges AS ue
+    FROM {{ ref('int_user_artifact_incidence') }} AS ue
     JOIN contains_edges AS ce
-        ON ce.target_node_id = ue.target_node_id
+        ON ce.target_node_id = ue.right_node_id
 ),
 
 -- Collaborator pairs: users who share at least one repo.

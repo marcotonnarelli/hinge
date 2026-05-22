@@ -4,6 +4,8 @@ import os
 import subprocess
 from pathlib import Path
 
+import duckdb
+
 from hinge.stages.projection.dbt_projection import DbtProjection
 from hinge.stages.projection.specs.dev_interaction import SPEC as DEV_INTERACTION
 from hinge.stages.projection.specs.top_authors_by_closures import SPEC as TOP_AUTHORS
@@ -46,7 +48,8 @@ def _run_dbt_models(db_path: Path, *models: str) -> None:
 
 
 def test_dev_interaction_reads_canonical_hin_views(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    db_path = tmp_path / "projection.duckdb"
+    view = _seed_fast_hin_store(db_path)
 
     handle = DbtProjection().run(DEV_INTERACTION, {}, view)
 
@@ -57,6 +60,11 @@ def test_dev_interaction_reads_canonical_hin_views(tmp_path):
         ("gh:user:1", "gh:user:3"),
         ("gh:user:2", "gh:user:3"),
     }
+    conn = duckdb.connect(str(db_path), read_only=True)
+    try:
+        assert conn.execute("SELECT count(*) FROM int_user_artifact_incidence").fetchone()[0] > 0
+    finally:
+        conn.close()
 
 
 def test_top_authors_by_closures_reads_canonical_hin_views(tmp_path):
@@ -85,8 +93,6 @@ def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
         "hin_nodes",
         "hin_edges",
     )
-
-    import duckdb
 
     conn = duckdb.connect(str(db_path), read_only=True)
     try:
