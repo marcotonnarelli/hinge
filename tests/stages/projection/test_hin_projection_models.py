@@ -12,6 +12,7 @@ from hinge.stages.projection.specs.dev_interaction import SPEC as DEV_INTERACTIO
 from hinge.stages.projection.specs.follow_user_user import SPEC as FOLLOW_USER_USER
 from hinge.stages.projection.specs.fork_repo_repo import SPEC as FORK_REPO_REPO
 from hinge.stages.projection.specs.issue_co_participation import SPEC as ISSUE_CO_PARTICIPATION
+from hinge.stages.projection.specs.issue_participation import SPEC as ISSUE_PARTICIPATION
 from hinge.stages.projection.specs.pr_author_reviewer import SPEC as PR_AUTHOR_REVIEWER
 from hinge.stages.projection.specs.pr_participation import SPEC as PR_PARTICIPATION
 from hinge.stages.projection.specs.repo_shared_contributors import SPEC as REPO_SHARED_CONTRIBUTORS
@@ -132,6 +133,25 @@ def test_issue_co_participation_projects_users_over_shared_issues(tmp_path):
     assert edges[0].dst_id == "gh:user:3"
     assert edges[0].attrs["shared_issues"] == 1
     assert edges[0].attrs["issues"] == ["gh:artifact:issue:200"]
+
+
+def test_issue_participation_emits_user_issue_roles(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(ISSUE_PARTICIPATION, {}, view)
+
+    by_pair = {(edge.src_id, edge.dst_id): edge for edge in handle.iter_edges()}
+    assert set(by_pair) == {
+        ("gh:user:1", "gh:artifact:issue:200"),
+        ("gh:user:1", "gh:artifact:issue:201"),
+        ("gh:user:3", "gh:artifact:issue:200"),
+    }
+    assert by_pair[("gh:user:1", "gh:artifact:issue:200")].attrs["roles"] == ["commented_on"]
+    assert by_pair[("gh:user:1", "gh:artifact:issue:201")].attrs["roles"] == ["opened"]
+    assert set(by_pair[("gh:user:3", "gh:artifact:issue:200")].attrs["roles"]) == {
+        "opened",
+        "closed",
+    }
 
 
 def test_pr_author_reviewer_connects_pr_openers_to_reviewers(tmp_path):
