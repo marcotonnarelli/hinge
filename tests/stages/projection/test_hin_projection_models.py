@@ -10,6 +10,7 @@ import pytest
 from hinge.stages.projection.dbt_projection import DbtProjection
 from hinge.stages.projection.specs.dev_interaction import SPEC as DEV_INTERACTION
 from hinge.stages.projection.specs.fork_repo_repo import SPEC as FORK_REPO_REPO
+from hinge.stages.projection.specs.issue_co_participation import SPEC as ISSUE_CO_PARTICIPATION
 from hinge.stages.projection.specs.repo_shared_contributors import SPEC as REPO_SHARED_CONTRIBUTORS
 from hinge.stages.projection.specs.star_user_repo import SPEC as STAR_USER_REPO
 from hinge.stages.projection.specs.top_authors_by_closures import SPEC as TOP_AUTHORS
@@ -104,6 +105,20 @@ def test_fork_repo_repo_slices_native_fork_edges(tmp_path):
     assert edges[0].dst_id == "gh:repo:10"
     assert edges[0].attrs["recipe_name"] == "fork_repo_repo"
     assert edges[0].attrs["directed"] is True
+
+
+def test_issue_co_participation_projects_users_over_shared_issues(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(ISSUE_CO_PARTICIPATION, {}, view)
+
+    edges = list(handle.iter_edges())
+    assert len(edges) == 1
+    assert edges[0].type == "co_participates_issue"
+    assert edges[0].src_id == "gh:user:1"
+    assert edges[0].dst_id == "gh:user:3"
+    assert edges[0].attrs["shared_issues"] == 1
+    assert edges[0].attrs["issues"] == ["gh:artifact:issue:200"]
 
 
 def test_repo_shared_contributors_projects_developer_repo_affiliation(tmp_path):
