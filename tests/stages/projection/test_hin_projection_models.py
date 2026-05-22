@@ -10,6 +10,7 @@ import pytest
 from hinge.stages.projection.dbt_projection import DbtProjection
 from hinge.stages.projection.specs.dev_interaction import SPEC as DEV_INTERACTION
 from hinge.stages.projection.specs.fork_repo_repo import SPEC as FORK_REPO_REPO
+from hinge.stages.projection.specs.repo_shared_contributors import SPEC as REPO_SHARED_CONTRIBUTORS
 from hinge.stages.projection.specs.star_user_repo import SPEC as STAR_USER_REPO
 from hinge.stages.projection.specs.top_authors_by_closures import SPEC as TOP_AUTHORS
 from hinge.stages.store.duckdb_store import DuckDBStore
@@ -105,6 +106,20 @@ def test_fork_repo_repo_slices_native_fork_edges(tmp_path):
     assert edges[0].attrs["directed"] is True
 
 
+def test_repo_shared_contributors_projects_developer_repo_affiliation(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(REPO_SHARED_CONTRIBUTORS, {}, view)
+
+    edges = list(handle.iter_edges())
+    assert len(edges) == 1
+    assert edges[0].type == "shared_contributors"
+    assert edges[0].src_id == "gh:repo:10"
+    assert edges[0].dst_id == "gh:repo:20"
+    assert edges[0].attrs["shared_contributors"] == 1
+    assert edges[0].attrs["contributors"] == ["gh:user:1"]
+
+
 def test_star_user_repo_slices_native_star_edges(tmp_path):
     view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
 
@@ -147,10 +162,10 @@ def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
         )
         assert account_types["human"] == 5
         assert account_types["organization"] == 1
-        assert conn.execute("SELECT count(*) FROM hin_repositories").fetchone()[0] == 2
+        assert conn.execute("SELECT count(*) FROM hin_repositories").fetchone()[0] == 3
         assert conn.execute("SELECT count(*) FROM hin_artifacts").fetchone()[0] > 0
-        assert conn.execute("SELECT count(*) FROM hin_nodes").fetchone()[0] == 16
-        assert conn.execute("SELECT count(*) FROM hin_edges").fetchone()[0] == 25
+        assert conn.execute("SELECT count(*) FROM hin_nodes").fetchone()[0] == 18
+        assert conn.execute("SELECT count(*) FROM hin_edges").fetchone()[0] == 27
         edge_types = {
             row[0]
             for row in conn.execute("SELECT edge_type FROM hin_edges").fetchall()
@@ -168,4 +183,4 @@ def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
 
     with DuckDBStore(path=db_path) as store:
         store.scope_to_dataset(DATASET_ID)
-        assert store._c().execute("SELECT count(*) FROM active_hin_nodes").fetchone()[0] == 16
+        assert store._c().execute("SELECT count(*) FROM active_hin_nodes").fetchone()[0] == 18

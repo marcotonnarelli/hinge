@@ -19,7 +19,7 @@ def test_fast_numfocus_ingest_populates_contract_and_hin_views(tmp_path: Path) -
         records, nodes, edges = store.ingest_numfocus_contracts(did, FIXTURE)
         store.finalise_dataset(did, nodes, edges)
 
-        assert records == 12
+        assert records == 13
         assert nodes > 0
         assert edges > 0
 

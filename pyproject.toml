@@ -60,6 +60,7 @@ dbt = "hinge.stages.projection.dbt_projection:DbtProjection"
 [project.entry-points."hinge.projection_specs"]
 dev-interaction          = "hinge.stages.projection.specs.dev_interaction:SPEC"
 fork-repo-repo           = "hinge.stages.projection.specs.fork_repo_repo:SPEC"
+repo-shared-contributors = "hinge.stages.projection.specs.repo_shared_contributors:SPEC"
 star-user-repo           = "hinge.stages.projection.specs.star_user_repo:SPEC"
 top-authors-by-closures  = "hinge.stages.projection.specs.top_authors_by_closures:SPEC"
 
