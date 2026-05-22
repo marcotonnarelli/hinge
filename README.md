@@ -1,4 +1,4 @@
-# hinge — Heterogeneous Information Network tool
+# hinge — Heterogeneous Information Network for Generalized Extraction 
 
 `hinge` ingests GitHub activity datasets (JSONL today; CSV/Parquet planned), persists
 them as a typed multi-relational graph in DuckDB, and exposes **projections** —
