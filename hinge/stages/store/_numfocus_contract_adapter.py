@@ -286,7 +286,7 @@ def _insert_contract_manifest(
 ) -> None:
     conn.execute(
         "INSERT OR REPLACE INTO contract_adapter_manifest "
-        "SELECT ?, 'numfocus-actions-duckdb', '0.1.0', ?, now(), TRUE, TRUE, TRUE, FALSE, FALSE,"
+        "SELECT ?, 'numfocus-actions-duckdb', '0.1.0', ?, now(), TRUE, TRUE, FALSE, FALSE, FALSE,"
         "       TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, FALSE, FALSE, FALSE,"
         "       min(occurred_at), max(occurred_at), list_distinct(list('gh:repo:' || coalesce(cast(repo_id AS TEXT), repo_full_name))),"
         "       'Example fast DuckDB adapter for NumFocus GH_Actions.jsonl; source-specific, not core HIN logic.' "

@@ -265,6 +265,7 @@ def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
             ).fetchall()
         )
         assert capabilities["has_pull_requests"] is True
+        assert capabilities["has_commits"] is False
         assert capabilities["has_line_touches"] is False
     finally:
         conn.close()
