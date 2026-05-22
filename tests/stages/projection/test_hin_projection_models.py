@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import subprocess
 from pathlib import Path
 
 from hinge.stages.projection.dbt_projection import DbtProjection
@@ -9,6 +11,7 @@ from hinge.stages.store.duckdb_store import DuckDBStore
 
 FIXTURE = Path("tests/fixtures/numfocus_hin_synthetic.jsonl")
 DATASET_ID = "0123456789abcdef0123456789abcdef"
+DBT_PROJECT_DIR = Path("hinge/stages/projection")
 
 
 def _seed_fast_hin_store(path: Path):
@@ -18,6 +21,28 @@ def _seed_fast_hin_store(path: Path):
         _, node_count, edge_count = store.ingest_numfocus_contracts(DATASET_ID, FIXTURE)
         store.finalise_dataset(DATASET_ID, node_count, edge_count)
         return store.scope_to_dataset(DATASET_ID)
+
+
+def _run_dbt_models(db_path: Path, *models: str) -> None:
+    env = os.environ.copy()
+    env["HINGE_STORE_PATH"] = str(db_path)
+    env["DBT_PROFILES_DIR"] = str(DBT_PROJECT_DIR)
+    subprocess.run(
+        [
+            "dbt",
+            "run",
+            "--project-dir",
+            str(DBT_PROJECT_DIR),
+            "--profiles-dir",
+            str(DBT_PROJECT_DIR),
+            "--select",
+            *models,
+        ],
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
 
 
 def test_dev_interaction_reads_canonical_hin_views(tmp_path):
@@ -45,3 +70,39 @@ def test_top_authors_by_closures_reads_canonical_hin_views(tmp_path):
     assert edges[0].src_id == "gh:user:3"
     assert edges[0].dst_id == "gh:user:3"
     assert edges[0].attrs == {"rank": 1, "closed_repos": 1}
+
+
+def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
+    db_path = tmp_path / "projection.duckdb"
+    _seed_fast_hin_store(db_path)
+
+    _run_dbt_models(
+        db_path,
+        "hin_accounts",
+        "hin_repositories",
+        "hin_artifacts",
+        "hin_capabilities",
+    )
+
+    import duckdb
+
+    conn = duckdb.connect(str(db_path), read_only=True)
+    try:
+        account_types = dict(
+            conn.execute(
+                "SELECT account_type, count(*) FROM hin_accounts GROUP BY account_type"
+            ).fetchall()
+        )
+        assert account_types["human"] == 5
+        assert account_types["organization"] == 1
+        assert conn.execute("SELECT count(*) FROM hin_repositories").fetchone()[0] == 2
+        assert conn.execute("SELECT count(*) FROM hin_artifacts").fetchone()[0] > 0
+        capabilities = dict(
+            conn.execute(
+                "SELECT capability, is_available FROM hin_capabilities"
+            ).fetchall()
+        )
+        assert capabilities["has_pull_requests"] is True
+        assert capabilities["has_line_touches"] is False
+    finally:
+        conn.close()
