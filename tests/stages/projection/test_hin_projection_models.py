@@ -15,6 +15,7 @@ from hinge.stages.projection.specs.issue_co_participation import SPEC as ISSUE_C
 from hinge.stages.projection.specs.pr_author_reviewer import SPEC as PR_AUTHOR_REVIEWER
 from hinge.stages.projection.specs.repo_shared_contributors import SPEC as REPO_SHARED_CONTRIBUTORS
 from hinge.stages.projection.specs.star_user_repo import SPEC as STAR_USER_REPO
+from hinge.stages.projection.specs.watch_user_repo import SPEC as WATCH_USER_REPO
 from hinge.stages.store.duckdb_store import DuckDBStore
 
 FIXTURE = Path("tests/fixtures/numfocus_hin_synthetic.jsonl")
@@ -172,6 +173,16 @@ def test_star_user_repo_slices_native_star_edges(tmp_path):
     assert edges[0].dst_id == "gh:repo:10"
     assert edges[0].attrs["recipe_name"] == "star_user_repo"
     assert edges[0].attrs["weight_kind"] == "binary"
+
+
+def test_watch_user_repo_rejects_missing_adapter_capability(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    with pytest.raises(subprocess.CalledProcessError) as exc_info:
+        DbtProjection().run(WATCH_USER_REPO, {}, view)
+
+    output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
+    assert "Missing capabilities: has_watches" in output
 
 
 def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
