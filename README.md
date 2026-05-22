@@ -80,13 +80,13 @@ and no changes to the kernel.
 
 ### Step 1 — Write the SQL model
 
-Create `hinge/stages/projection/models/<name>.sql`. The model must read from
-two dbt sources and produce a fixed set of columns:
+Create `hinge/dbt/models/networks/<name>.sql`. The model must read from
+the canonical HIN dbt sources and produce a fixed set of columns:
 
 ```sql
 -- Inputs (always these two sources, never the raw tables)
-{{ source('hin', 'active_nodes') }}   -- columns: type, id, ts, attrs
-{{ source('hin', 'active_edges') }}   -- columns: type, src_id, dst_id, ts, attrs
+{{ source('hin', 'active_hin_nodes') }}
+{{ source('hin', 'active_hin_edges') }}
 
 -- Output (every projection must produce exactly these columns)
 SELECT
@@ -98,9 +98,9 @@ SELECT
     attrs      JSON    -- any payload, use to_json({...})
 ```
 
-`active_nodes` and `active_edges` are views created by the store immediately
-before the projection runs — they are already filtered to the requested
-`dataset_id`, so the SQL never needs to reference `dataset_id` at all.
+`active_hin_nodes` and `active_hin_edges` are views created by the store
+immediately before the projection runs — they are already filtered to the
+requested `dataset_id`, so the SQL never needs to reference `dataset_id` at all.
 
 **Nodes-only projections:** the pipeline derives output nodes from the union
 of `src_id` and `dst_id` in the result table. A projection that emits no
@@ -109,9 +109,9 @@ edges will therefore produce no nodes either. The workaround is to use
 exporter, carry metadata in `attrs`, and can be filtered out in downstream
 tools with `G.remove_edges_from(nx.selfloop_edges(G))`.
 
-See [dev_interaction.sql](hinge/stages/projection/models/dev_interaction.sql)
+See [dev_interaction.sql](hinge/dbt/models/networks/dev_interaction.sql)
 for a full working example with a documented input/output contract, and
-[top_authors_by_closures.sql](hinge/stages/projection/models/top_authors_by_closures.sql)
+[top_authors_by_closures.sql](hinge/dbt/models/networks/top_authors_by_closures.sql)
 for the self-loop pattern.
 
 ### Step 2 — Create the spec module

@@ -24,7 +24,7 @@ class ProjectionSpec(BaseModel):
     third-party packages register new projections the same way readers and
     exporters are registered.
 
-    See ``hinge/stages/projection/models/dev_interaction.sql`` for the
+    See ``hinge/dbt/models/networks/dev_interaction.sql`` for the
     contract every model must satisfy.
     """
 

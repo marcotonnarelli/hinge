@@ -6,7 +6,7 @@
 #
 # 1. The store owns the file. Before a projection runs, the caller asks the
 #    store for a ``DatasetView`` (``store.scope_to_dataset(dataset_id)``).
-#    The store creates the ``active_nodes`` and ``active_edges`` views and
+#    The store creates the ``active_hin_nodes`` and ``active_hin_edges`` views and
 #    returns the path + view names. This stage never opens DuckDB directly
 #    for setup — it only opens a read-only connection later to stream rows.
 #
@@ -17,12 +17,13 @@
 #    rows are typed edges with columns
 #        (src_id TEXT, src_type TEXT, dst_id TEXT, dst_type TEXT,
 #         edge_type TEXT, attrs JSON)
-#    Read ``models/dev_interaction.sql`` for the worked example.
+#    Read ``hinge/dbt/models/networks/dev_interaction.sql`` for the worked example.
 #
 # 4. ``run`` returns a ``ProjectedGraphHandle`` that streams rows back from
 #    the materialised table. The exporter consumes the handle.
 #
-# To add a new projection: drop a .sql file in models/, ship a module under
+# To add a new cookbook projection: drop a .sql file in
+# ``hinge/dbt/models/networks/``, ship a module under
 # ``hinge/stages/projection/specs/`` exposing a ``SPEC`` constant, register
 # the entry-point in pyproject.toml under ``hinge.projection_specs``. No
 # edits to this file are needed.
@@ -50,7 +51,7 @@ from hinge.kernel.schema.typed_node import TypedNode
 
 logger = logging.getLogger(__name__)
 
-_DBT_PROJECT_DIR = Path(__file__).parent
+_DBT_PROJECT_DIR = Path(__file__).parents[2] / "dbt"
 _FETCH_BATCH = 1_000
 
 

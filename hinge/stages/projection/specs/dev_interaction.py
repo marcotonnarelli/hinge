@@ -1,6 +1,6 @@
 """Projection spec: dev-interaction.
 
-The SQL lives at ``hinge/stages/projection/models/dev_interaction.sql``.
+The SQL lives at ``hinge/dbt/models/networks/dev_interaction.sql``.
 This module exposes the spec under the ``hinge.projection_specs`` entry-point
 group so the registry can discover it like any other plugin.
 

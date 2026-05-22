@@ -122,7 +122,7 @@ CLI → lib.export(dataset_id, projection_name, fmt, sink)
 | Reader for a new dataset format | `hinge/stages/readers/<name>_reader.py` | `hinge.readers` |
 | Store backend | `hinge/stages/store/<name>_store.py` | `hinge.stores` |
 | Projection engine (e.g. native-Python instead of dbt) | `hinge/stages/projection/<name>_projection.py` | `hinge.projections` |
-| Projection spec (a new task-specific subgraph) | SQL in `hinge/stages/projection/models/<name>.sql` + spec module in `hinge/stages/projection/specs/<name>.py` | `hinge.projection_specs` |
+| Projection spec (a new task-specific subgraph) | SQL in `hinge/dbt/models/networks/<name>.sql` + spec module in `hinge/stages/projection/specs/<name>.py` | `hinge.projection_specs` |
 | Exporter for a new file format | `hinge/stages/exporters/<format>_exporter.py` | `hinge.exporters` |
 | Node or edge label | one line in `hinge/config/types.yaml` (bump `schema_version`) | n/a |
 
@@ -132,8 +132,8 @@ edits to the kernel.
 ## Known limitations
 
 * Only one projection can run at a time against the same DuckDB file —
-  `active_nodes` / `active_edges` view names are shared. Concurrent runs
-  against different datasets would clash. Sequential runs only.
+  `active_*` view names are shared. Concurrent runs against different datasets
+  would clash. Sequential runs only.
 * `DatasetView` is concretely SQL-backed today (path + view names). A future
   in-memory store implementing the protocol would need to write its data
   out to a temporary DuckDB file. This is a deliberate concession: every

@@ -74,7 +74,7 @@
           <mxGeometry x="355" y="35" width="295" height="170" as="geometry" />
         </mxCell>
 
-        <mxCell id="43" value="&lt;b&gt;Projection&lt;/b&gt;&lt;br&gt;&lt;b&gt;DbtProjection&lt;/b&gt;&lt;br&gt;Creates active_nodes / active_edges&lt;br&gt;views filtered by dataset_id&lt;br&gt;Runs dbt via subprocess&lt;br&gt;SQL models in models/*.sql" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;html=1;" vertex="1" parent="40">
+        <mxCell id="43" value="&lt;b&gt;Projection&lt;/b&gt;&lt;br&gt;&lt;b&gt;DbtProjection&lt;/b&gt;&lt;br&gt;Creates active_hin_nodes / active_hin_edges&lt;br&gt;views filtered by dataset_id&lt;br&gt;Runs dbt via subprocess&lt;br&gt;SQL models in hinge/dbt" style="rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;html=1;" vertex="1" parent="40">
           <mxGeometry x="700" y="35" width="295" height="170" as="geometry" />
         </mxCell>
 

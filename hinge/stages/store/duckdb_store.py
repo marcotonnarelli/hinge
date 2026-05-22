@@ -55,8 +55,8 @@ class SchemaMismatchError(RuntimeError):
 class DuckDbDatasetView:
     """DatasetView returned by DuckDBStore. SQL-backed by definition.
 
-    The views ``active_nodes`` / ``active_edges`` are reused across runs;
-    ``scope_to_dataset`` rewrites them to point at the requested dataset_id.
+    The scoped ``active_*`` views are reused across runs; ``scope_to_dataset``
+    rewrites them to point at the requested dataset_id.
     Concurrent projections against different datasets are therefore *not*
     supported — sequential runs only.
     """

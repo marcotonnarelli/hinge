@@ -72,9 +72,7 @@ packages = ["hinge"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "hinge/config/types.yaml" = "hinge/config/types.yaml"
-"hinge/stages/projection/dbt_project.yml" = "hinge/stages/projection/dbt_project.yml"
-"hinge/stages/projection/profiles.yml" = "hinge/stages/projection/profiles.yml"
-"hinge/stages/projection/models" = "hinge/stages/projection/models"
+"hinge/dbt" = "hinge/dbt"
 
 # -------------------------------------------------------------------------
 # Tooling

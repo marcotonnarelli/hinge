@@ -11,7 +11,7 @@ from hinge.stages.store.duckdb_store import DuckDBStore
 
 FIXTURE = Path("tests/fixtures/numfocus_hin_synthetic.jsonl")
 DATASET_ID = "0123456789abcdef0123456789abcdef"
-DBT_PROJECT_DIR = Path("hinge/stages/projection")
+DBT_PROJECT_DIR = Path("hinge/dbt")
 
 
 def _seed_fast_hin_store(path: Path):

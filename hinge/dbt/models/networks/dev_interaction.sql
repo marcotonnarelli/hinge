@@ -48,7 +48,7 @@
 --   materialisation is `table`, set globally in dbt_project.yml.
 --
 -- ─── HOW TO REGISTER THIS FILE ──────────────────────────────────────────────
---   1. Save the .sql file in hinge/stages/projection/models/<name>.sql.
+--   1. Save the .sql file in hinge/dbt/models/networks/<name>.sql.
 --   2. Add a sibling Python module under
 --      hinge/stages/projection/specs/<name>.py exposing a `SPEC` constant
 --      (see specs/dev_interaction.py for the template).

@@ -63,9 +63,8 @@ hinge/
 │   │   └── duckdb_store.py      # DuckDBStore (context manager) → implements StoreStage
 │   ├── projection/
 │   │   ├── dbt_projection.py    # DbtProjection (engine) → implements ProjectionStage
-│   │   ├── specs/               # one module per ProjectionSpec — entry-point registered
-│   │   │   └── dev_interaction.py   # exposes SPEC = ProjectionSpec(...)
-│   │   └── models/              # dbt SQL models — one .sql per projection spec
+│   │   └── specs/               # one module per ProjectionSpec — entry-point registered
+│   │       └── dev_interaction.py   # exposes SPEC = ProjectionSpec(...)
 │   └── exporters/
 │       ├── gml_exporter.py      # GmlExporter    → implements ExporterStage
 │       ├── graphml_exporter.py  # GraphMlExporter (stub)
@@ -78,6 +77,14 @@ hinge/
 │   ├── tui/            # Textual app; calls registry + runner
 │   ├── web/            # FastAPI app; calls registry + runner
 │   └── lib.py          # Public library facade: hinge.ingest(), hinge.export(), hinge.project()
+├── dbt/                # SQL representation layer: sources → HIN core → cookbook networks
+│   ├── models/
+│   │   ├── sources/    # active_* dbt source declarations
+│   │   ├── hin/        # canonical HIN representation models
+│   │   └── networks/   # cookbook projection models selected by ProjectionSpec
+│   ├── macros/
+│   ├── dbt_project.yml
+│   └── profiles.yml
 ├── config/
 │   └── types.yaml      # Single source of truth for the open label vocabulary + schema_version
 └── __init__.py         # re-exports from frontends/lib.py
@@ -232,8 +239,8 @@ the typed HIN stored in DuckDB. The pipeline is:
 
 ```
 scope_to_dataset()           DbtProjection.run()       _CursorHandle
-  creates active_nodes   →     dbt subprocess runs   →   lazy cursor over
-  and active_edges views       your .sql model            the result table
+  creates active_hin_nodes →   dbt subprocess runs   →   lazy cursor over
+  and active_hin_edges views   your .sql model            the result table
   filtered to dataset_id       writes result table
 ```
 
@@ -241,15 +248,15 @@ Four steps, no kernel changes required.
 
 **Step 1 — Write the SQL model**
 
-Create `hinge/stages/projection/models/<name>.sql`.
+Create `hinge/dbt/models/networks/<name>.sql`.
 
-Input: read from exactly two dbt sources — never touch `nodes` or `edges`
-directly (they contain all datasets; `active_nodes`/`active_edges` are already
-filtered to the requested `dataset_id` by the store).
+Input: read from exactly two dbt sources — never touch `nodes`, `edges`, or
+unscoped contract tables directly (they contain all datasets; `active_hin_nodes` /
+`active_hin_edges` are already filtered to the requested `dataset_id` by the store).
 
 ```sql
-{{ source('hin', 'active_nodes') }}   -- columns: type, id, ts, attrs
-{{ source('hin', 'active_edges') }}   -- columns: type, src_id, dst_id, ts, attrs
+{{ source('hin', 'active_hin_nodes') }}   -- canonical HIN node view
+{{ source('hin', 'active_hin_edges') }}   -- canonical HIN edge view
 ```
 
 Output: the model **must** return exactly these columns in this order:
@@ -275,8 +282,8 @@ the node appears in both sides of the union, the self-loop carries metadata in
 `attrs`, and downstream tools can drop it with
 `G.remove_edges_from(nx.selfloop_edges(G))`.
 
-See `models/dev_interaction.sql` for a full worked example and
-`models/top_authors_by_closures.sql` for the self-loop pattern.
+See `hinge/dbt/models/networks/dev_interaction.sql` for a full worked example and
+`hinge/dbt/models/networks/top_authors_by_closures.sql` for the self-loop pattern.
 
 **Step 2 — Create the spec module**
 
@@ -654,7 +661,7 @@ RUN uv sync --frozen --no-dev
 
 # Copy source
 COPY hinge/ ./hinge/
-COPY hinge/stages/projection/models/ ./hinge/stages/projection/models/
+COPY hinge/dbt/ ./hinge/dbt/
 
 # ── Runtime ──────────────────────────────────────────────────────
 FROM python:3.12-slim AS runtime
@@ -817,7 +824,7 @@ uv run hinge ingest events.jsonl --reader numfocus
 uv run hinge list datasets
 ```
 
-The DuckDB store partitions `nodes` and `edges` by `dataset_id`. Before each dbt run, `DbtProjection` creates two views (`active_nodes`, `active_edges`) filtered to the requested dataset. Projection SQL files always read from these views.
+The DuckDB store partitions `nodes`, `edges`, and `contract_*` tables by `dataset_id`. Before each dbt run, `DbtProjection` creates active scoped views (notably `active_hin_nodes`, `active_hin_edges`, and `active_contract_*`) filtered to the requested dataset. Projection SQL files always read from these views.
 
 ---
 
