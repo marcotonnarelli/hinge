@@ -67,6 +67,22 @@
 
 WITH
 
+contribution_edges AS (
+    {{ slice_edges(
+        edge_types=['opened', 'reviewed', 'merged', 'commented_on', 'review_commented_on', 'pushed'],
+        source_types=['user'],
+        target_types=['artifact']
+    ) }}
+),
+
+contains_edges AS (
+    {{ slice_edges(
+        edge_types=['contains'],
+        source_types=['repo'],
+        target_types=['artifact']
+    ) }}
+),
+
 -- (user, repo) pairs: user made at least one code contribution to that repo.
 -- The two-hop path is: user -[contribution]-> artifact <-[contains]- repo.
 -- We join on canonical HIN node ids to traverse the graph.
@@ -74,22 +90,9 @@ user_repo AS (
     SELECT DISTINCT
         ue.source_node_id AS user_id,
         ce.source_node_id AS repo_id
-    FROM {{ ref('hin_edges') }} AS ue
-    JOIN {{ ref('hin_edges') }} AS ce
+    FROM contribution_edges AS ue
+    JOIN contains_edges AS ce
         ON ce.target_node_id = ue.target_node_id
-    WHERE ue.edge_type IN (
-              'opened',
-              'reviewed',
-              'merged',
-              'commented_on',
-              'review_commented_on',
-              'pushed'
-          )
-      AND ue.source_node_type = 'user'
-      AND ue.target_node_type = 'artifact'
-      AND ce.edge_type = 'contains'
-      AND ce.source_node_type = 'repo'
-      AND ce.target_node_type = 'artifact'
 ),
 
 -- Collaborator pairs: users who share at least one repo.
