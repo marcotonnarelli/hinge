@@ -65,7 +65,6 @@ issue-co-participation   = "hinge.stages.projection.specs.issue_co_participation
 pr-author-reviewer       = "hinge.stages.projection.specs.pr_author_reviewer:SPEC"
 repo-shared-contributors = "hinge.stages.projection.specs.repo_shared_contributors:SPEC"
 star-user-repo           = "hinge.stages.projection.specs.star_user_repo:SPEC"
-top-authors-by-closures  = "hinge.stages.projection.specs.top_authors_by_closures:SPEC"
 
 [project.entry-points."hinge.exporters"]
 gml = "hinge.stages.exporters.gml_exporter:GmlExporter"

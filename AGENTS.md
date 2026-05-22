@@ -282,8 +282,7 @@ the node appears in both sides of the union, the self-loop carries metadata in
 `attrs`, and downstream tools can drop it with
 `G.remove_edges_from(nx.selfloop_edges(G))`.
 
-See `hinge/dbt/models/networks/dev_interaction.sql` for a full worked example and
-`hinge/dbt/models/networks/top_authors_by_closures.sql` for the self-loop pattern.
+See `hinge/dbt/models/networks/dev_interaction.sql` for a full worked example.
 
 **Step 2 — Create the spec module**
 

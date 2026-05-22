@@ -15,7 +15,6 @@ from hinge.stages.projection.specs.issue_co_participation import SPEC as ISSUE_C
 from hinge.stages.projection.specs.pr_author_reviewer import SPEC as PR_AUTHOR_REVIEWER
 from hinge.stages.projection.specs.repo_shared_contributors import SPEC as REPO_SHARED_CONTRIBUTORS
 from hinge.stages.projection.specs.star_user_repo import SPEC as STAR_USER_REPO
-from hinge.stages.projection.specs.top_authors_by_closures import SPEC as TOP_AUTHORS
 from hinge.stages.store.duckdb_store import DuckDBStore
 
 FIXTURE = Path("tests/fixtures/numfocus_hin_synthetic.jsonl")
@@ -173,19 +172,6 @@ def test_star_user_repo_slices_native_star_edges(tmp_path):
     assert edges[0].dst_id == "gh:repo:10"
     assert edges[0].attrs["recipe_name"] == "star_user_repo"
     assert edges[0].attrs["weight_kind"] == "binary"
-
-
-def test_top_authors_by_closures_reads_canonical_hin_views(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
-
-    handle = DbtProjection().run(TOP_AUTHORS, {}, view)
-
-    edges = list(handle.iter_edges())
-    assert len(edges) == 1
-    assert edges[0].type == "top_author"
-    assert edges[0].src_id == "gh:user:3"
-    assert edges[0].dst_id == "gh:user:3"
-    assert edges[0].attrs == {"rank": 1, "closed_repos": 1}
 
 
 def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):

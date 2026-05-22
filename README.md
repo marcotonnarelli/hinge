@@ -110,9 +110,7 @@ exporter, carry metadata in `attrs`, and can be filtered out in downstream
 tools with `G.remove_edges_from(nx.selfloop_edges(G))`.
 
 See [dev_interaction.sql](hinge/dbt/models/networks/dev_interaction.sql)
-for a full working example with a documented input/output contract, and
-[top_authors_by_closures.sql](hinge/dbt/models/networks/top_authors_by_closures.sql)
-for the self-loop pattern.
+for a full working example with a documented input/output contract.
 
 ### Step 2 — Create the spec module
 
