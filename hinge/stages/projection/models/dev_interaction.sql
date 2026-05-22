@@ -21,8 +21,8 @@
 -- ─── INPUT CONTRACT ─────────────────────────────────────────────────────────
 --   Every projection reads from exactly two dbt sources:
 --
---     {{ source('hin', 'active_nodes') }}   columns: type, id, ts, attrs
---     {{ source('hin', 'active_edges') }}   columns: type, src_id, dst_id, ts, attrs
+--     {{ source('hin', 'active_hin_nodes') }}  canonical HIN node view
+--     {{ source('hin', 'active_hin_edges') }}  canonical HIN edge view
 --
 --   The store (DuckDBStore) rewrites these views before each projection run
 --   to point at the requested dataset_id. Do NOT touch any other table.
@@ -69,15 +69,15 @@ WITH
 
 -- (user, repo) pairs: user made at least one code contribution to that repo.
 -- The two-hop path is: user -[contribution]-> artifact <-[contains]- repo.
--- We join on artifact id (ce.dst_id = ue.dst_id) to traverse the HIN.
+-- We join on canonical HIN node ids to traverse the graph.
 user_repo AS (
     SELECT DISTINCT
-        ue.src_id AS user_id,
-        ce.src_id AS repo_id
-    FROM {{ source('hin', 'active_edges') }} AS ue
-    JOIN {{ source('hin', 'active_edges') }} AS ce
-        ON ce.dst_id = ue.dst_id
-    WHERE ue.type IN (
+        ue.source_node_id AS user_id,
+        ce.source_node_id AS repo_id
+    FROM {{ source('hin', 'active_hin_edges') }} AS ue
+    JOIN {{ source('hin', 'active_hin_edges') }} AS ce
+        ON ce.target_node_id = ue.target_node_id
+    WHERE ue.edge_type IN (
               'opened',
               'reviewed',
               'merged',
@@ -85,7 +85,11 @@ user_repo AS (
               'review_commented_on',
               'pushed'
           )
-      AND ce.type = 'contains'
+      AND ue.source_node_type = 'user'
+      AND ue.target_node_type = 'artifact'
+      AND ce.edge_type = 'contains'
+      AND ce.source_node_type = 'repo'
+      AND ce.target_node_type = 'artifact'
 ),
 
 -- Collaborator pairs: users who share at least one repo.

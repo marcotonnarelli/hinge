@@ -27,13 +27,17 @@ WITH
 -- pointing to an artifact that the repo contains.
 user_closed_repos AS (
     SELECT DISTINCT
-        ue.src_id AS user_id,
-        ce.src_id AS repo_id
-    FROM {{ source('hin', 'active_edges') }} AS ue
-    JOIN {{ source('hin', 'active_edges') }} AS ce
-        ON  ce.dst_id  = ue.dst_id    -- same artifact
-    WHERE ue.type = 'closed'
-      AND ce.type = 'contains'
+        ue.source_node_id AS user_id,
+        ce.source_node_id AS repo_id
+    FROM {{ source('hin', 'active_hin_edges') }} AS ue
+    JOIN {{ source('hin', 'active_hin_edges') }} AS ce
+        ON  ce.target_node_id  = ue.target_node_id    -- same artifact
+    WHERE ue.edge_type = 'closed'
+      AND ue.source_node_type = 'user'
+      AND ue.target_node_type = 'artifact'
+      AND ce.edge_type = 'contains'
+      AND ce.source_node_type = 'repo'
+      AND ce.target_node_type = 'artifact'
 ),
 
 -- Count distinct repos per user, rank them, keep only the top 20.

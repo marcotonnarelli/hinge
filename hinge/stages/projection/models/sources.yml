@@ -1,14 +1,13 @@
 # dbt source declaration.
 #
-# DbtProjection creates two views before every dbt run:
-#   active_nodes — SELECT ... FROM nodes WHERE dataset_id = '<id>'
-#   active_edges — SELECT ... FROM edges WHERE dataset_id = '<id>'
+# DbtProjection creates dataset-scoped views before every dbt run.
 #
-# Reference these in projection SQL with:
-#   {{ source('hin', 'active_nodes') }}
-#   {{ source('hin', 'active_edges') }}
+# Core HIN projections should reference:
+#   {{ source('hin', 'active_hin_nodes') }}
+#   {{ source('hin', 'active_hin_edges') }}
 #
-# Never reference `nodes` or `edges` directly — they contain all datasets.
+# The legacy active_nodes / active_edges sources remain for old projections only.
+# Never reference base tables directly — they contain all datasets.
 version: 2
 
 sources:
@@ -32,3 +31,23 @@ sources:
           - name: dst_id
           - name: ts
           - name: attrs
+      - name: active_hin_nodes
+        description: "Canonical HIN node view from HIN_DBT_DESIGN.md, filtered to the active dataset_id."
+        columns:
+          - name: node_id
+          - name: node_type
+          - name: node_subtype
+          - name: natural_key
+          - name: display_name
+          - name: properties
+      - name: active_hin_edges
+        description: "Canonical HIN edge view from HIN_DBT_DESIGN.md, filtered to the active dataset_id."
+        columns:
+          - name: edge_id
+          - name: source_node_id
+          - name: source_node_type
+          - name: target_node_id
+          - name: target_node_type
+          - name: edge_type
+          - name: relation_subtype
+          - name: properties
