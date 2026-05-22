@@ -14,7 +14,8 @@ VALUES
   ('$DATASET_ID', 'gh:artifact:commit:c1', 'github', 'commit', 'gh:repo:10', 'commit c1', TIMESTAMP '2024-01-02', TIMESTAMP '2024-01-02', '$DATASET_ID'),
   ('$DATASET_ID', 'gh:artifact:file:src/app.py', 'github', 'file', 'gh:repo:10', 'src/app.py', TIMESTAMP '2024-01-02', TIMESTAMP '2024-01-02', '$DATASET_ID'),
   ('$DATASET_ID', 'gh:artifact:issue:1', 'github', 'issue', 'gh:repo:10', 'issue 1', TIMESTAMP '2024-01-03', TIMESTAMP '2024-01-03', '$DATASET_ID'),
-  ('$DATASET_ID', 'gh:artifact:issue:2', 'github', 'issue', 'gh:repo:10', 'issue 2', TIMESTAMP '2024-01-03', TIMESTAMP '2024-01-03', '$DATASET_ID');
+  ('$DATASET_ID', 'gh:artifact:issue:2', 'github', 'issue', 'gh:repo:10', 'issue 2', TIMESTAMP '2024-01-03', TIMESTAMP '2024-01-03', '$DATASET_ID'),
+  ('$DATASET_ID', 'gh:artifact:comment:1', 'github', 'comment', 'gh:repo:10', 'comment 1', TIMESTAMP '2024-01-04', TIMESTAMP '2024-01-04', '$DATASET_ID');
 
 INSERT INTO contract_relations (
   dataset_id, relation_key, source_node_key, source_node_type, target_node_key, target_node_type,
@@ -28,7 +29,9 @@ VALUES
   ('$DATASET_ID', 'rel:coauthor:2:c1', 'gh:user:2', 'account', 'gh:artifact:commit:c1', 'artifact', 'coauthored', null, true, TIMESTAMP '2024-01-02', TIMESTAMP '2024-01-02', 1, 1.0, 'commit-2', 'synthetic', '$DATASET_ID', '{}'),
   ('$DATASET_ID', 'rel:touch:1:file', 'gh:user:1', 'account', 'gh:artifact:file:src/app.py', 'artifact', 'touched', null, true, TIMESTAMP '2024-01-02', TIMESTAMP '2024-01-02', 1, 1.0, 'touch-1', 'synthetic', '$DATASET_ID', '{}'),
   ('$DATASET_ID', 'rel:touch:3:file', 'gh:user:3', 'account', 'gh:artifact:file:src/app.py', 'artifact', 'touched', null, true, TIMESTAMP '2024-01-02', TIMESTAMP '2024-01-02', 1, 1.0, 'touch-3', 'synthetic', '$DATASET_ID', '{}'),
-  ('$DATASET_ID', 'rel:ref:issue1:issue2', 'gh:artifact:issue:1', 'artifact', 'gh:artifact:issue:2', 'artifact', 'references', null, true, TIMESTAMP '2024-01-03', TIMESTAMP '2024-01-03', 1, 1.0, 'ref-1', 'synthetic', '$DATASET_ID', '{}');
+  ('$DATASET_ID', 'rel:ref:issue1:issue2', 'gh:artifact:issue:1', 'artifact', 'gh:artifact:issue:2', 'artifact', 'references', null, true, TIMESTAMP '2024-01-03', TIMESTAMP '2024-01-03', 1, 1.0, 'ref-1', 'synthetic', '$DATASET_ID', '{}'),
+  ('$DATASET_ID', 'rel:author:1:comment', 'gh:user:1', 'account', 'gh:artifact:comment:1', 'artifact', 'authored', null, true, TIMESTAMP '2024-01-04', TIMESTAMP '2024-01-04', 1, 1.0, 'comment-1', 'synthetic', '$DATASET_ID', '{}'),
+  ('$DATASET_ID', 'rel:mention:comment:2', 'gh:artifact:comment:1', 'artifact', 'gh:user:2', 'account', 'mentions', null, true, TIMESTAMP '2024-01-04', TIMESTAMP '2024-01-04', 1, 1.0, 'mention-1', 'synthetic', '$DATASET_ID', '{}');
 
 INSERT INTO contract_adapter_manifest (
   adapter_run_id, adapter_name, adapter_version, source_name, extracted_at,
@@ -39,7 +42,7 @@ INSERT INTO contract_adapter_manifest (
 VALUES (
   '$DATASET_ID', 'synthetic-cookbook-contract', '0.1.0', 'tests/fixtures/cookbook_contract_seed.sql', now(),
   true, true, true, true, false,
-  false, false, true, false, false, true,
-  false, true, false, true, TIMESTAMP '2024-01-01', TIMESTAMP '2024-01-03',
+  false, false, true, true, false, true,
+  false, true, true, true, TIMESTAMP '2024-01-01', TIMESTAMP '2024-01-04',
   'Minimal contract-level fixture for cookbook recipes unsupported by the NumFocus adapter.'
 );

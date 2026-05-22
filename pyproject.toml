@@ -71,6 +71,7 @@ pr-participation         = "hinge.stages.projection.specs.pr_participation:SPEC"
 pr-reviewer-coreview     = "hinge.stages.projection.specs.pr_reviewer_coreview:SPEC"
 repo-shared-contributors = "hinge.stages.projection.specs.repo_shared_contributors:SPEC"
 star-user-repo           = "hinge.stages.projection.specs.star_user_repo:SPEC"
+user-mention-user        = "hinge.stages.projection.specs.user_mention_user:SPEC"
 watch-user-repo          = "hinge.stages.projection.specs.watch_user_repo:SPEC"
 
 [project.entry-points."hinge.exporters"]

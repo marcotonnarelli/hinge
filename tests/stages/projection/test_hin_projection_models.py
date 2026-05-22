@@ -21,6 +21,7 @@ from hinge.stages.projection.specs.pr_participation import SPEC as PR_PARTICIPAT
 from hinge.stages.projection.specs.pr_reviewer_coreview import SPEC as PR_REVIEWER_COREVIEW
 from hinge.stages.projection.specs.repo_shared_contributors import SPEC as REPO_SHARED_CONTRIBUTORS
 from hinge.stages.projection.specs.star_user_repo import SPEC as STAR_USER_REPO
+from hinge.stages.projection.specs.user_mention_user import SPEC as USER_MENTION_USER
 from hinge.stages.projection.specs.watch_user_repo import SPEC as WATCH_USER_REPO
 from hinge.stages.store.duckdb_store import DuckDBStore
 
@@ -325,6 +326,29 @@ def test_star_user_repo_slices_native_star_edges(tmp_path):
     assert edges[0].dst_id == "gh:repo:10"
     assert edges[0].attrs["recipe_name"] == "star_user_repo"
     assert edges[0].attrs["weight_kind"] == "binary"
+
+
+def test_user_mention_user_collapses_comment_mention_paths(tmp_path):
+    view = _seed_cookbook_contract_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(USER_MENTION_USER, {}, view)
+
+    edges = list(handle.iter_edges())
+    assert len(edges) == 1
+    assert edges[0].type == "mentions_user"
+    assert edges[0].src_id == "gh:user:1"
+    assert edges[0].dst_id == "gh:user:2"
+    assert edges[0].attrs["comments"] == ["gh:artifact:comment:1"]
+
+
+def test_user_mention_user_rejects_missing_adapter_capability(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    with pytest.raises(subprocess.CalledProcessError) as exc_info:
+        DbtProjection().run(USER_MENTION_USER, {}, view)
+
+    output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
+    assert "Missing capabilities: has_mentions" in output
 
 
 def test_watch_user_repo_uses_contract_level_watch_edges(tmp_path):
