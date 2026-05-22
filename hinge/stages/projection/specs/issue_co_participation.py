@@ -3,7 +3,7 @@ from __future__ import annotations
 from hinge.kernel.projection.projection_spec import ProjectionSpec
 
 SPEC = ProjectionSpec(
-    name="issue-co-participation",
+    name="user-user-issue-co-participation",
     description=(
         "Cookbook user-user issue participation network. Connects users who "
         "opened, commented on, or closed the same issue."

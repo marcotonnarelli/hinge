@@ -73,13 +73,13 @@ CLI → lib.ingest()
     → print "Dataset ID: <hex>"
 ```
 
-### `hinge export --dataset <id> --projection dev-interaction --format gml -o out.gml`
+### `hinge export --dataset <id> --projection user-user-repo-collaboration --format gml -o out.gml`
 
 ```
 CLI → lib.export(dataset_id, projection_name, fmt, sink)
     → HINSchema.from_yaml(…)
     → registry.get_projection("dbt")
-    → registry.get_projection_spec("dev-interaction")    # ProjectionSpec instance
+    → registry.get_projection_spec("user-user-repo-collaboration")    # ProjectionSpec instance
     → registry.get_exporter("gml")
 
     Phase 1 — store creates dataset-scoped views, then releases the file lock:

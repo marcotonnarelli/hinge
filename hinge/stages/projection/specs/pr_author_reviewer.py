@@ -3,7 +3,7 @@ from __future__ import annotations
 from hinge.kernel.projection.projection_spec import ProjectionSpec
 
 SPEC = ProjectionSpec(
-    name="pr-author-reviewer",
+    name="user-user-pr-author-reviewer",
     description=(
         "Cookbook directed pull-request review network. Connects a PR opener "
         "to users who reviewed that pull request."

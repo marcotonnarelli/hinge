@@ -25,7 +25,7 @@ uv run hinge ingest path/to/events.jsonl --reader numfocus --fast-hin
 # 3. Use the printed Dataset ID to run a projection and export
 uv run hinge export \
   --dataset 78fc87c370944dc2b4a4e2d4bdd97ce1 \
-  --projection dev-interaction \
+  --projection user-user-repo-collaboration \
   --format gml \
   -o out/graph.gml
 
@@ -39,7 +39,7 @@ Or via Docker:
 docker compose build
 docker compose run --rm hinge ingest /data/events.jsonl --reader numfocus
 docker compose run --rm hinge export \
-  --dataset <id> --projection dev-interaction --format gml -o /output/graph.gml
+  --dataset <id> --projection user-user-repo-collaboration --format gml -o /output/graph.gml
 ```
 
 The DuckDB store lives at `$HINGE_STORE_PATH` (default `./network.duckdb`
@@ -203,7 +203,7 @@ uv run hinge list readers
 uv run hinge list exporters
 
 # Export
-uv run hinge export --dataset <id> --projection dev-interaction --format gml -o out.gml
+uv run hinge export --dataset <id> --projection user-user-repo-collaboration --format gml -o out.gml
 
 # Dev / CI
 uv run pytest                                # tests
@@ -218,7 +218,7 @@ uv run lint-imports                          # enforce kernel/stages/frontends b
 ## Makefile (development)
 
 A `Makefile` is provided for quick local iteration. It uses hardcoded defaults
-(fixture file, `numfocus` reader, `dev-interaction` projection, GML format) so
+(fixture file, `numfocus` reader, `user-user-repo-collaboration` projection, GML format) so
 you don't have to remember arguments during development — **not intended for
 production use**.
 

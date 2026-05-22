@@ -3,7 +3,7 @@ from __future__ import annotations
 from hinge.kernel.projection.projection_spec import ProjectionSpec
 
 SPEC = ProjectionSpec(
-    name="developer-repo-affiliation",
+    name="user-repo-affiliation",
     description=(
         "Cookbook user-repository affiliation network. Connects active "
         "contributors to repositories through issue, PR, review, comment, "

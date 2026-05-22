@@ -3,7 +3,7 @@ from __future__ import annotations
 from hinge.kernel.projection.projection_spec import ProjectionSpec
 
 SPEC = ProjectionSpec(
-    name="watch-user-repo",
+    name="user-repo-watch",
     description=(
         "Cookbook user-repository watch/subscription network. Emits directed "
         "user -> repo 'watches' edges when the active adapter collected watch data."

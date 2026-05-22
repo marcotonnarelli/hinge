@@ -450,7 +450,7 @@ def test_dev_interaction_produces_user_edges(tmp_path):
     store = DuckDBStore(path=tmp_path / "test.duckdb")
     # ... upsert fixture nodes/edges ...
     proj = DbtProjection(db_path=tmp_path / "test.duckdb")
-    handle = proj.run("dev-interaction", params={})
+    handle = proj.run("user-user-repo-collaboration", params={})
     edges = list(handle.iter_edges())
     assert len(edges) > 0
 ```
@@ -494,7 +494,7 @@ When in doubt, split.
 | Thing | Convention | Example |
 |---|---|---|
 | Stage class | `<Dataset/Format><Role>` | `GmlExporter`, `NumFocusReader`, `DbtProjection` |
-| Entry-point key | `kebab-case` | `"numfocus"`, `"gml"`, `"dev-interaction"` |
+| Entry-point key | `kebab-case` | `"numfocus"`, `"gml"`, `"user-user-repo-collaboration"` |
 | Kernel value objects | `PascalCase` | `TypedNode`, `StoreFingerprint`, `ReaderDescriptor` |
 | dbt model files | `snake_case.sql` | `dev_interaction.sql`, `fork_dynamics.sql` |
 | Test files | `test_<module>.py` | `test_gml.py`, `test_duckdb.py` |
@@ -569,7 +569,7 @@ uv run hinge list datasets
 # Export using the printed dataset ID
 uv run hinge export \
   --dataset <hex> \
-  --projection dev-interaction \
+  --projection user-user-repo-collaboration \
   --format gml \
   -o out.gml
 

@@ -52,4 +52,4 @@ Outputs land in `outputs/network-composer-demo/` (DuckDB file, Parquet edge list
 
 Star, fork, PR review, issue/comment, developer–repository affiliation, and projections (repo–repo shared-contributor, user–user co-participation).
 
-Not supported from this scrape: follow, watch, @-mention, artifact-reference, and true co-commit/co-edit networks. See [tool-design-ideas.md](tool-design-ideas.md) for the full table and reasons.
+Not supported from this scrape: follow, watch, @-mention, artifact-artifact-reference, and true co-commit/co-edit networks. See [tool-design-ideas.md](tool-design-ideas.md) for the full table and reasons.

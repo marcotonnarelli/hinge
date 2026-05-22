@@ -1474,7 +1474,7 @@ recipes = pd.DataFrame([
         "available": True,
     },
     {
-        "name": "repo-shared-contributors",
+        "name": "repo-repo-shared-contributors",
         "default_mode": "repo-projection",
         "default_weight": "shared_count",
         "supported_weights": "shared_count,event_weighted",

@@ -1,4 +1,4 @@
-"""Projection spec: dev-interaction.
+"""Projection spec: user-user-repo-collaboration.
 
 The SQL lives at ``hinge/dbt/models/networks/dev_interaction.sql``.
 This module exposes the spec under the ``hinge.projection_specs`` entry-point
@@ -13,7 +13,7 @@ from __future__ import annotations
 from hinge.kernel.projection.projection_spec import ProjectionSpec
 
 SPEC = ProjectionSpec(
-    name="dev-interaction",
+    name="user-user-repo-collaboration",
     description=(
         "Undirected user-to-user collaboration graph. Two developers are "
         "connected by a 'collaborates_with' edge if they both made code "

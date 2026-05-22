@@ -3,7 +3,7 @@ from __future__ import annotations
 from hinge.kernel.projection.projection_spec import ProjectionSpec
 
 SPEC = ProjectionSpec(
-    name="co-commit-user-user",
+    name="user-user-co-commit",
     description=(
         "Cookbook user-user co-commit network. Connects users who authored, "
         "committed, or coauthored the same commit when commit-level data exists."

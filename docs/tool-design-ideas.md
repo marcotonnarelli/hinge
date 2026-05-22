@@ -200,7 +200,7 @@ Available from this dataset:
   ✓ pr-review
   ✓ issue-comment
   ✓ dev-repo
-  ✓ repo-shared-contributors
+  ✓ repo-repo-shared-contributors
   ✓ pr-user-projection
   ✓ issue-user-projection
 
@@ -208,7 +208,7 @@ Unavailable:
   ✗ follow              requires follower/following data
   ✗ watch               requires subscriber data
   ✗ mention             requires comment bodies or timeline events
-  ✗ artifact-reference  requires body/timeline reference data
+  ✗ artifact-artifact-reference  requires body/timeline reference data
   ✗ co-commit           requires git commit-level data
 ```
 
@@ -767,7 +767,7 @@ binary
 weighted_activity_score
 ```
 
-## Recipe: repo-shared-contributors
+## Recipe: repo-repo-shared-contributors
 
 ### Network-science object
 

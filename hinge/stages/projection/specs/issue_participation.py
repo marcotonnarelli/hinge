@@ -3,7 +3,7 @@ from __future__ import annotations
 from hinge.kernel.projection.projection_spec import ProjectionSpec
 
 SPEC = ProjectionSpec(
-    name="issue-participation",
+    name="user-issue-participation",
     description=(
         "Cookbook user-issue participation network. Emits user -> issue "
         "edges carrying roles such as opener, commenter, and closer."

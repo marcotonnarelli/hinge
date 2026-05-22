@@ -3,7 +3,7 @@ from __future__ import annotations
 from hinge.kernel.projection.projection_spec import ProjectionSpec
 
 SPEC = ProjectionSpec(
-    name="star-user-repo",
+    name="user-repo-star",
     description=(
         "Cookbook user-repository attention network. Emits one directed "
         "user -> repo 'starred' edge for each GitHub star event available "

@@ -3,7 +3,7 @@ from __future__ import annotations
 from hinge.kernel.projection.projection_spec import ProjectionSpec
 
 SPEC = ProjectionSpec(
-    name="fork-repo-repo",
+    name="repo-repo-fork",
     description=(
         "Cookbook repository fork network. Emits directed fork repo -> "
         "upstream repo 'fork_of' edges when fork metadata is available."

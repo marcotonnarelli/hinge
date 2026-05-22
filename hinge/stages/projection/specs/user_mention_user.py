@@ -3,7 +3,7 @@ from __future__ import annotations
 from hinge.kernel.projection.projection_spec import ProjectionSpec
 
 SPEC = ProjectionSpec(
-    name="user-mention-user",
+    name="user-user-mention",
     description=(
         "Cookbook user mention network. Collapses user -> comment artifact -> "
         "mentioned user paths into directed user-user mention edges."

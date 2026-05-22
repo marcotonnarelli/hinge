@@ -3,7 +3,7 @@ from __future__ import annotations
 from hinge.kernel.projection.projection_spec import ProjectionSpec
 
 SPEC = ProjectionSpec(
-    name="co-edit-line-user-user",
+    name="user-user-co-edit-line",
     description=(
         "Cookbook user-user line-level co-edit network. Connects users who "
         "touched the same line span when line-touch data exists."

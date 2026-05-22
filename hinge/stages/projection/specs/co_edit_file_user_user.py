@@ -3,7 +3,7 @@ from __future__ import annotations
 from hinge.kernel.projection.projection_spec import ProjectionSpec
 
 SPEC = ProjectionSpec(
-    name="co-edit-file-user-user",
+    name="user-user-co-edit-file",
     description=(
         "Cookbook user-user co-edit network. Connects users who touched the "
         "same file when commit/file-touch data exists."
