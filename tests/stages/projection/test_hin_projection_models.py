@@ -63,6 +63,7 @@ def test_dev_interaction_reads_canonical_hin_views(tmp_path):
     conn = duckdb.connect(str(db_path), read_only=True)
     try:
         assert conn.execute("SELECT count(*) FROM int_user_artifact_incidence").fetchone()[0] > 0
+        assert conn.execute("SELECT count(*) FROM int_developer_repo_affiliation").fetchone()[0] > 0
     finally:
         conn.close()
 

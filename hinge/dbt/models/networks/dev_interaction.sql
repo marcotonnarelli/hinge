@@ -67,50 +67,28 @@
 
 WITH
 
-contains_edges AS (
-    {{ slice_edges(
-        edge_types=['contains'],
-        source_types=['repo'],
-        target_types=['artifact']
-    ) }}
-),
-
--- (user, repo) pairs: user made at least one code contribution to that repo.
--- The two-hop path is: user -[contribution]-> artifact <-[contains]- repo.
--- We join on canonical HIN node ids to traverse the graph.
-user_repo AS (
-    SELECT DISTINCT
-        ue.left_node_id AS user_id,
-        ce.source_node_id AS repo_id
-    FROM {{ ref('int_user_artifact_incidence') }} AS ue
-    JOIN contains_edges AS ce
-        ON ce.target_node_id = ue.right_node_id
-),
-
--- Collaborator pairs: users who share at least one repo.
--- src_id < dst_id eliminates both self-edges and mirrored duplicates,
--- making the relation undirected (one row per unordered pair).
+-- Collaborator pairs: users who share at least one active development repo.
+-- This is the generic bipartite projection pattern: user -> repo <- user.
 collaborators AS (
-    SELECT
-        a.user_id                       AS src_id,
-        b.user_id                       AS dst_id,
-        COUNT(DISTINCT a.repo_id)       AS shared_repo_count,
-        list_distinct(list(a.repo_id))  AS shared_repos
-    FROM user_repo AS a
-    JOIN user_repo AS b
-        ON  a.repo_id  = b.repo_id
-        AND a.user_id  < b.user_id
-    GROUP BY a.user_id, b.user_id
+    {{ project_bipartite(
+        incidence_relation=ref('int_developer_repo_affiliation'),
+        left_col='user_node_id',
+        right_col='repo_node_id',
+        directed=false,
+        weight_mode='shared_count'
+    ) }}
 )
 
 SELECT
-    src_id,
+    source_node_id                              AS src_id,
     'user'                                     AS src_type,
-    dst_id,
+    target_node_id                              AS dst_id,
     'user'                                     AS dst_type,
     'collaborates_with'                        AS edge_type,
     to_json({
-        'shared_repos': shared_repo_count,
-        'repos':        shared_repos
+        'shared_repos': n_contexts,
+        'repos':        context_node_ids,
+        'weight':       weight,
+        'weight_kind':  weight_kind
     })                                         AS attrs
 FROM collaborators
