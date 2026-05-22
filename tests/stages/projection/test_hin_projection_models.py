@@ -11,6 +11,7 @@ from hinge.stages.projection.dbt_projection import DbtProjection
 from hinge.stages.projection.specs.artifact_reference import SPEC as ARTIFACT_REFERENCE
 from hinge.stages.projection.specs.co_commit_user_user import SPEC as CO_COMMIT_USER_USER
 from hinge.stages.projection.specs.co_edit_file_user_user import SPEC as CO_EDIT_FILE_USER_USER
+from hinge.stages.projection.specs.co_edit_line_user_user import SPEC as CO_EDIT_LINE_USER_USER
 from hinge.stages.projection.specs.dev_interaction import SPEC as DEV_INTERACTION
 from hinge.stages.projection.specs.follow_user_user import SPEC as FOLLOW_USER_USER
 from hinge.stages.projection.specs.fork_repo_repo import SPEC as FORK_REPO_REPO
@@ -145,6 +146,29 @@ def test_co_edit_file_user_user_rejects_missing_adapter_capability(tmp_path):
 
     output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
     assert "has_file_touches" in output
+
+
+def test_co_edit_line_user_user_uses_contract_level_line_touches(tmp_path):
+    view = _seed_cookbook_contract_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(CO_EDIT_LINE_USER_USER, {}, view)
+
+    edges = list(handle.iter_edges())
+    assert len(edges) == 1
+    assert edges[0].type == "co_edited_line"
+    assert edges[0].src_id == "gh:user:1"
+    assert edges[0].dst_id == "gh:user:2"
+    assert edges[0].attrs["line_spans"] == ["gh:artifact:line:src/app.py:10-20"]
+
+
+def test_co_edit_line_user_user_rejects_missing_adapter_capability(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    with pytest.raises(subprocess.CalledProcessError) as exc_info:
+        DbtProjection().run(CO_EDIT_LINE_USER_USER, {}, view)
+
+    output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
+    assert "has_line_touches" in output
 
 
 def test_dev_interaction_reads_canonical_hin_views(tmp_path):
