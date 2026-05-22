@@ -82,6 +82,8 @@ def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
         "hin_repositories",
         "hin_artifacts",
         "hin_capabilities",
+        "hin_nodes",
+        "hin_edges",
     )
 
     import duckdb
@@ -97,6 +99,13 @@ def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
         assert account_types["organization"] == 1
         assert conn.execute("SELECT count(*) FROM hin_repositories").fetchone()[0] == 2
         assert conn.execute("SELECT count(*) FROM hin_artifacts").fetchone()[0] > 0
+        assert conn.execute("SELECT count(*) FROM hin_nodes").fetchone()[0] == 16
+        assert conn.execute("SELECT count(*) FROM hin_edges").fetchone()[0] == 25
+        edge_types = {
+            row[0]
+            for row in conn.execute("SELECT edge_type FROM hin_edges").fetchall()
+        }
+        assert {"opened", "reviewed", "contains", "fork_of"}.issubset(edge_types)
         capabilities = dict(
             conn.execute(
                 "SELECT capability, is_available FROM hin_capabilities"
@@ -106,3 +115,7 @@ def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
         assert capabilities["has_line_touches"] is False
     finally:
         conn.close()
+
+    with DuckDBStore(path=db_path) as store:
+        store.scope_to_dataset(DATASET_ID)
+        assert store._c().execute("SELECT count(*) FROM active_hin_nodes").fetchone()[0] == 16

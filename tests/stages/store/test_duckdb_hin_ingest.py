@@ -39,7 +39,7 @@ def test_fast_numfocus_ingest_populates_contract_and_hin_views(tmp_path: Path) -
         hin_node_types = dict(
             store._c()
             .execute(
-                "SELECT node_type, count(*) FROM hin_nodes WHERE dataset_id = ? GROUP BY node_type",
+                "SELECT node_type, count(*) FROM _store_hin_nodes WHERE dataset_id = ? GROUP BY node_type",
                 [did],
             )
             .fetchall()
@@ -49,7 +49,7 @@ def test_fast_numfocus_ingest_populates_contract_and_hin_views(tmp_path: Path) -
         hin_edge_types = {
             row[0]
             for row in store._c()
-            .execute("SELECT edge_type FROM hin_edges WHERE dataset_id = ?", [did])
+            .execute("SELECT edge_type FROM _store_hin_edges WHERE dataset_id = ?", [did])
             .fetchall()
         }
         assert {"opened", "reviewed", "commented_on", "contains", "starred", "fork_of"}.issubset(

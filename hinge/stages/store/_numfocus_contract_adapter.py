@@ -6,7 +6,7 @@ those fields into the source-agnostic ``contract_*`` tables owned by
 ``DuckDBStore``.
 
 The reusable/core layer starts after this adapter has populated contract tables:
-``contract_*`` -> ``hin_nodes`` / ``hin_edges`` -> dbt projections. New data
+``contract_*`` -> canonical HIN views/models -> dbt projections. New data
 sources should copy this shape, not this source mapping.
 """
 
@@ -302,13 +302,13 @@ def _backfill_graph_from_hin(conn: duckdb.DuckDBPyConnection, dataset_id: str) -
         "INSERT OR REPLACE INTO nodes "
         "SELECT dataset_id, node_type AS type, node_id AS id, coalesce(updated_at, created_at, observed_at) AS ts,"
         "       to_json({'subtype': node_subtype, 'natural_key': natural_key, 'display_name': display_name}) AS attrs "
-        "FROM hin_nodes WHERE dataset_id = ?",
+        "FROM _store_hin_nodes WHERE dataset_id = ?",
         [dataset_id],
     )
     conn.execute(
         "INSERT INTO edges "
         "SELECT dataset_id, edge_type AS type, source_node_id AS src_id, target_node_id AS dst_id, occurred_at AS ts,"
         "       to_json({'subtype': relation_subtype, 'source_record_id': source_record_id, 'weight': weight}) AS attrs "
-        "FROM hin_edges WHERE dataset_id = ?",
+        "FROM _store_hin_edges WHERE dataset_id = ?",
         [dataset_id],
     )

@@ -214,11 +214,11 @@ class DuckDBStore:
         )
         c.execute(
             f"CREATE OR REPLACE VIEW active_hin_nodes AS "
-            f"SELECT * FROM hin_nodes WHERE dataset_id = '{dataset_id}'"
+            f"SELECT * FROM _store_hin_nodes WHERE dataset_id = '{dataset_id}'"
         )
         c.execute(
             f"CREATE OR REPLACE VIEW active_hin_edges AS "
-            f"SELECT * FROM hin_edges WHERE dataset_id = '{dataset_id}'"
+            f"SELECT * FROM _store_hin_edges WHERE dataset_id = '{dataset_id}'"
         )
         logger.debug("views scoped — dataset_id=%s", dataset_id)
         return DuckDbDatasetView(dataset_id=dataset_id, db_path=self._path)
@@ -432,8 +432,10 @@ class DuckDBStore:
 
     def _create_hin_views(self) -> None:
         c = self._c()
+        self._drop_legacy_hin_view_if_present("hin_nodes")
+        self._drop_legacy_hin_view_if_present("hin_edges")
         c.execute(
-            "CREATE OR REPLACE VIEW hin_nodes AS "
+            "CREATE OR REPLACE VIEW _store_hin_nodes AS "
             "SELECT dataset_id, account_key AS node_id, 'user' AS node_type, account_type AS node_subtype, "
             "       account_key AS natural_key, login AS display_name, created_at, updated_at, observed_at, "
             "       FALSE AS is_stub, profile_json AS properties "
@@ -448,7 +450,7 @@ class DuckDBStore:
             "FROM contract_artifacts"
         )
         c.execute(
-            "CREATE OR REPLACE VIEW hin_edges AS "
+            "CREATE OR REPLACE VIEW _store_hin_edges AS "
             "SELECT r.dataset_id, r.relation_key AS edge_id, "
             "       r.source_node_key AS source_node_id, "
             "       CASE WHEN r.source_node_type = 'account' THEN 'user' ELSE r.source_node_type END AS source_node_type, "
@@ -460,6 +462,15 @@ class DuckDBStore:
             "       r.occurred_at, r.observed_at, r.valid_from, r.valid_to, "
             "       r.event_count, r.weight, r.adapter_run_id, r.source_record_id, r.properties "
             "FROM contract_relations r "
-            "LEFT JOIN hin_nodes sn ON sn.dataset_id = r.dataset_id AND sn.node_id = r.source_node_key "
-            "LEFT JOIN hin_nodes tn ON tn.dataset_id = r.dataset_id AND tn.node_id = r.target_node_key"
+            "LEFT JOIN _store_hin_nodes sn ON sn.dataset_id = r.dataset_id AND sn.node_id = r.source_node_key "
+            "LEFT JOIN _store_hin_nodes tn ON tn.dataset_id = r.dataset_id AND tn.node_id = r.target_node_key"
         )
+
+    def _drop_legacy_hin_view_if_present(self, name: str) -> None:
+        row = self._c().execute(
+            "SELECT table_type FROM information_schema.tables "
+            "WHERE table_schema = 'main' AND table_name = ?",
+            [name],
+        ).fetchone()
+        if row is not None and row[0] == "VIEW":
+            self._c().execute(f"DROP VIEW {name}")
