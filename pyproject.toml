@@ -63,6 +63,7 @@ co-commit-user-user      = "hinge.stages.projection.specs.co_commit_user_user:SP
 co-edit-file-user-user   = "hinge.stages.projection.specs.co_edit_file_user_user:SPEC"
 co-edit-line-user-user   = "hinge.stages.projection.specs.co_edit_line_user_user:SPEC"
 dev-interaction          = "hinge.stages.projection.specs.dev_interaction:SPEC"
+developer-repo-affiliation = "hinge.stages.projection.specs.developer_repo_affiliation:SPEC"
 follow-user-user         = "hinge.stages.projection.specs.follow_user_user:SPEC"
 fork-repo-repo           = "hinge.stages.projection.specs.fork_repo_repo:SPEC"
 issue-co-participation   = "hinge.stages.projection.specs.issue_co_participation:SPEC"

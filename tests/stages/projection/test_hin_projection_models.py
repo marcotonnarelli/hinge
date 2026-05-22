@@ -13,6 +13,9 @@ from hinge.stages.projection.specs.co_commit_user_user import SPEC as CO_COMMIT_
 from hinge.stages.projection.specs.co_edit_file_user_user import SPEC as CO_EDIT_FILE_USER_USER
 from hinge.stages.projection.specs.co_edit_line_user_user import SPEC as CO_EDIT_LINE_USER_USER
 from hinge.stages.projection.specs.dev_interaction import SPEC as DEV_INTERACTION
+from hinge.stages.projection.specs.developer_repo_affiliation import (
+    SPEC as DEVELOPER_REPO_AFFILIATION,
+)
 from hinge.stages.projection.specs.follow_user_user import SPEC as FOLLOW_USER_USER
 from hinge.stages.projection.specs.fork_repo_repo import SPEC as FORK_REPO_REPO
 from hinge.stages.projection.specs.issue_co_participation import SPEC as ISSUE_CO_PARTICIPATION
@@ -169,6 +172,19 @@ def test_co_edit_line_user_user_rejects_missing_adapter_capability(tmp_path):
 
     output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
     assert "has_line_touches" in output
+
+
+def test_developer_repo_affiliation_excludes_passive_star_watch_ties(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(DEVELOPER_REPO_AFFILIATION, {}, view)
+
+    pairs = {(edge.src_id, edge.dst_id) for edge in handle.iter_edges()}
+    assert ("gh:user:1", "gh:repo:10") in pairs
+    assert ("gh:user:1", "gh:repo:20") in pairs
+    assert ("gh:user:2", "gh:repo:10") in pairs
+    assert ("gh:user:3", "gh:repo:10") in pairs
+    assert ("gh:user:4", "gh:repo:10") not in pairs
 
 
 def test_dev_interaction_reads_canonical_hin_views(tmp_path):
