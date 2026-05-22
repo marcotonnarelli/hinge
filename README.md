@@ -48,15 +48,6 @@ can coexist in the same file — each ingest run gets a unique Dataset ID.
 
 ---
 
-## What's implemented vs stubbed
-
-The scaffolding fills every slot defined in AGENTS.md with at least an
-importable class. Implementations marked **functional** are wired into the
-default pipeline; **stub** classes raise `NotImplementedError` and are kept so
-the contracts and entry-point conventions remain visible.
-
----
-
 ## Adding a new projection
 
 A projection is a dbt SQL model that derives a task-specific sub-graph from
