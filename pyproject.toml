@@ -59,6 +59,7 @@ dbt = "hinge.stages.projection.dbt_projection:DbtProjection"
 # the same way.
 [project.entry-points."hinge.projection_specs"]
 dev-interaction          = "hinge.stages.projection.specs.dev_interaction:SPEC"
+fork-repo-repo           = "hinge.stages.projection.specs.fork_repo_repo:SPEC"
 star-user-repo           = "hinge.stages.projection.specs.star_user_repo:SPEC"
 top-authors-by-closures  = "hinge.stages.projection.specs.top_authors_by_closures:SPEC"
 

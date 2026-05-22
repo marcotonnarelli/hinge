@@ -9,6 +9,7 @@ import pytest
 
 from hinge.stages.projection.dbt_projection import DbtProjection
 from hinge.stages.projection.specs.dev_interaction import SPEC as DEV_INTERACTION
+from hinge.stages.projection.specs.fork_repo_repo import SPEC as FORK_REPO_REPO
 from hinge.stages.projection.specs.star_user_repo import SPEC as STAR_USER_REPO
 from hinge.stages.projection.specs.top_authors_by_closures import SPEC as TOP_AUTHORS
 from hinge.stages.store.duckdb_store import DuckDBStore
@@ -88,6 +89,20 @@ def test_dev_interaction_rejects_missing_adapter_capability(tmp_path):
 
     output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
     assert "Missing capabilities: has_pr_reviews" in output
+
+
+def test_fork_repo_repo_slices_native_fork_edges(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(FORK_REPO_REPO, {}, view)
+
+    edges = list(handle.iter_edges())
+    assert len(edges) == 1
+    assert edges[0].type == "fork_of"
+    assert edges[0].src_id == "gh:repo:11"
+    assert edges[0].dst_id == "gh:repo:10"
+    assert edges[0].attrs["recipe_name"] == "fork_repo_repo"
+    assert edges[0].attrs["directed"] is True
 
 
 def test_star_user_repo_slices_native_star_edges(tmp_path):
