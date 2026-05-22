@@ -11,4 +11,4 @@ SELECT
     created_at,
     observed_at,
     profile_json                           AS properties
-FROM {{ source('hin', 'active_contract_accounts') }}
+FROM {{ ref('stg_accounts') }}

@@ -106,15 +106,7 @@ def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
     db_path = tmp_path / "projection.duckdb"
     _seed_fast_hin_store(db_path)
 
-    _run_dbt_models(
-        db_path,
-        "hin_accounts",
-        "hin_repositories",
-        "hin_artifacts",
-        "hin_capabilities",
-        "hin_nodes",
-        "hin_edges",
-    )
+    _run_dbt_models(db_path, "+hin_edges", "+hin_capabilities")
 
     conn = duckdb.connect(str(db_path), read_only=True)
     try:

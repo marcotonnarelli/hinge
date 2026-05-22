@@ -19,7 +19,7 @@ WITH relations AS (
         adapter_run_id,
         source_record_id,
         properties
-    FROM {{ source('hin', 'active_contract_relations') }}
+    FROM {{ ref('stg_relations') }}
 )
 
 SELECT

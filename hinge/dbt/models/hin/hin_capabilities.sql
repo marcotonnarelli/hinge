@@ -2,7 +2,7 @@
 
 WITH manifest AS (
     SELECT *
-    FROM {{ source('hin', 'active_contract_adapter_manifest') }}
+    FROM {{ ref('stg_adapter_manifest') }}
 ),
 
 capabilities AS (

@@ -12,4 +12,4 @@ SELECT
     archived_at,
     observed_at,
     repo_json                       AS properties
-FROM {{ source('hin', 'active_contract_repositories') }}
+FROM {{ ref('stg_repositories') }}

@@ -20,4 +20,4 @@ SELECT
     merged_at,
     observed_at,
     artifact_json           AS properties
-FROM {{ source('hin', 'active_contract_artifacts') }}
+FROM {{ ref('stg_artifacts') }}
