@@ -15,6 +15,7 @@ from hinge.stages.projection.specs.issue_co_participation import SPEC as ISSUE_C
 from hinge.stages.projection.specs.issue_participation import SPEC as ISSUE_PARTICIPATION
 from hinge.stages.projection.specs.pr_author_reviewer import SPEC as PR_AUTHOR_REVIEWER
 from hinge.stages.projection.specs.pr_participation import SPEC as PR_PARTICIPATION
+from hinge.stages.projection.specs.pr_reviewer_coreview import SPEC as PR_REVIEWER_COREVIEW
 from hinge.stages.projection.specs.repo_shared_contributors import SPEC as REPO_SHARED_CONTRIBUTORS
 from hinge.stages.projection.specs.star_user_repo import SPEC as STAR_USER_REPO
 from hinge.stages.projection.specs.watch_user_repo import SPEC as WATCH_USER_REPO
@@ -159,13 +160,13 @@ def test_pr_author_reviewer_connects_pr_openers_to_reviewers(tmp_path):
 
     handle = DbtProjection().run(PR_AUTHOR_REVIEWER, {}, view)
 
-    edges = list(handle.iter_edges())
-    assert len(edges) == 1
-    assert edges[0].type == "reviewed_pr_from"
-    assert edges[0].src_id == "gh:user:1"
-    assert edges[0].dst_id == "gh:user:2"
-    assert edges[0].attrs["pull_requests"] == ["gh:artifact:pull_request:100"]
-    assert edges[0].attrs["directed"] is True
+    by_pair = {(edge.src_id, edge.dst_id): edge for edge in handle.iter_edges()}
+    assert set(by_pair) == {("gh:user:1", "gh:user:2"), ("gh:user:1", "gh:user:3")}
+    assert by_pair[("gh:user:1", "gh:user:2")].type == "reviewed_pr_from"
+    assert by_pair[("gh:user:1", "gh:user:2")].attrs["pull_requests"] == [
+        "gh:artifact:pull_request:100"
+    ]
+    assert by_pair[("gh:user:1", "gh:user:3")].attrs["directed"] is True
 
 
 def test_pr_participation_emits_user_pull_request_roles(tmp_path):
@@ -179,6 +180,21 @@ def test_pr_participation_emits_user_pull_request_roles(tmp_path):
     assert by_user["gh:user:1"].attrs["roles"] == ["opened"]
     assert "reviewed" in by_user["gh:user:2"].attrs["roles"]
     assert "commented_on" in by_user["gh:user:3"].attrs["roles"]
+    assert "reviewed" in by_user["gh:user:3"].attrs["roles"]
+
+
+def test_pr_reviewer_coreview_projects_reviewers_over_shared_prs(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(PR_REVIEWER_COREVIEW, {}, view)
+
+    edges = list(handle.iter_edges())
+    assert len(edges) == 1
+    assert edges[0].type == "co_reviewed_pr"
+    assert edges[0].src_id == "gh:user:2"
+    assert edges[0].dst_id == "gh:user:3"
+    assert edges[0].attrs["shared_pull_requests"] == 1
+    assert edges[0].attrs["pull_requests"] == ["gh:artifact:pull_request:100"]
 
 
 def test_repo_shared_contributors_projects_developer_repo_affiliation(tmp_path):
@@ -236,8 +252,8 @@ def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
         assert account_types["organization"] == 1
         assert conn.execute("SELECT count(*) FROM hin_repositories").fetchone()[0] == 3
         assert conn.execute("SELECT count(*) FROM hin_artifacts").fetchone()[0] > 0
-        assert conn.execute("SELECT count(*) FROM hin_nodes").fetchone()[0] == 18
-        assert conn.execute("SELECT count(*) FROM hin_edges").fetchone()[0] == 27
+        assert conn.execute("SELECT count(*) FROM hin_nodes").fetchone()[0] == 19
+        assert conn.execute("SELECT count(*) FROM hin_edges").fetchone()[0] == 30
         edge_types = {
             row[0]
             for row in conn.execute("SELECT edge_type FROM hin_edges").fetchall()
@@ -255,4 +271,4 @@ def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
 
     with DuckDBStore(path=db_path) as store:
         store.scope_to_dataset(DATASET_ID)
-        assert store._c().execute("SELECT count(*) FROM active_hin_nodes").fetchone()[0] == 18
+        assert store._c().execute("SELECT count(*) FROM active_hin_nodes").fetchone()[0] == 19
