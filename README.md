@@ -18,7 +18,7 @@ before changing code.
 uv sync --all-extras
 
 # 2. Ingest a dataset
-uv run hinge ingest path/to/events.jsonl --reader numfocus
+uv run hinge ingest path/to/events.jsonl --reader numfocus --fast-hin
 # → ingested 48 elements → 29 nodes, 19 edges (0 violations)
 # → Dataset ID: 78fc87c370944dc2b4a4e2d4bdd97ce1
 
@@ -45,6 +45,30 @@ docker compose run --rm hinge export \
 The DuckDB store lives at `$HINGE_STORE_PATH` (default `./network.duckdb`
 locally, `/store/network.duckdb` inside the container). Multiple datasets
 can coexist in the same file — each ingest run gets a unique Dataset ID.
+
+---
+
+## HIN contract + adapters
+
+The source-agnostic core starts at the adapter contract tables:
+
+```text
+source-specific adapter
+  -> contract_accounts / contract_repositories / contract_artifacts / contract_relations
+  -> hin_nodes / hin_edges
+  -> dbt projections
+  -> exporters
+```
+
+`--fast-hin` is an example adapter for this repo's NumFocus Actions JSONL scrape.
+It is intentionally source-specific: it knows paths like `$.actor.login` and
+`$.details.pull_request.id`. Other data sources should implement their own
+adapter that writes the same `contract_*` tables; then the HIN views and dbt
+recipes can run unchanged.
+
+The older Python `ReaderStage` path is still available for debugging and simple
+custom readers, but large JSONL ingests should use a DuckDB/SQL contract adapter
+where possible.
 
 ---
 
@@ -168,7 +192,10 @@ tail -f hinge.log
 ## Common commands
 
 ```bash
-# Ingest
+# Ingest via fast DuckDB -> HIN contract tables path (recommended for NumFocus Actions JSONL)
+uv run hinge ingest events.jsonl --reader numfocus --fast-hin
+
+# Ingest via portable Python reader path (slower, useful for debugging/custom readers)
 uv run hinge ingest events.jsonl --reader numfocus
 
 # Inspect stored datasets

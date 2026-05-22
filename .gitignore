@@ -33,6 +33,7 @@ coverage.xml
 *.dot
 out/
 output/
+outputs/
 
 # dbt build artefacts
 target/

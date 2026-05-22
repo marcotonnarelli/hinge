@@ -37,7 +37,7 @@ from hinge.kernel.schema.typed_node import TypedNode
 
 logger = logging.getLogger(__name__)
 
-_STORAGE_VERSION = 1  # storage layout version (table shapes). Independent of HIN schema_version.
+_STORAGE_VERSION = 2  # storage layout version (table shapes). Independent of HIN schema_version.
 _UUID_HEX = re.compile(r"^[0-9a-f]{32}$")
 
 
@@ -145,12 +145,31 @@ class DuckDBStore:
             )
         return len(n_rows) + len(e_rows)
 
+    def ingest_numfocus_contracts(
+        self, dataset_id: str, path: str | Path, *, limit: int | None = None
+    ) -> tuple[int, int, int]:
+        """Run the example fast DuckDB adapter for NumFocus Actions JSONL.
+
+        This is source-specific adapter logic, not core HIN logic. The store
+        owns the contract tables and HIN views; the adapter maps one raw source
+        format into those tables.
+        """
+        from hinge.stages.store import _numfocus_contract_adapter
+
+        self._require_dataset_id(dataset_id)
+        return _numfocus_contract_adapter.ingest(self._c(), dataset_id, path, limit=limit)
+
     def discard_dataset(self, dataset_id: str) -> None:
         """Remove every trace of a dataset. Called by the runner on ingest failure."""
         self._require_dataset_id(dataset_id)
         c = self._c()
         c.execute("DELETE FROM nodes WHERE dataset_id = ?", [dataset_id])
         c.execute("DELETE FROM edges WHERE dataset_id = ?", [dataset_id])
+        c.execute("DELETE FROM contract_relations WHERE dataset_id = ?", [dataset_id])
+        c.execute("DELETE FROM contract_artifacts WHERE dataset_id = ?", [dataset_id])
+        c.execute("DELETE FROM contract_repositories WHERE dataset_id = ?", [dataset_id])
+        c.execute("DELETE FROM contract_accounts WHERE dataset_id = ?", [dataset_id])
+        c.execute("DELETE FROM contract_adapter_manifest WHERE adapter_run_id = ?", [dataset_id])
         c.execute("DELETE FROM datasets WHERE dataset_id = ?", [dataset_id])
         logger.warning("dataset discarded — dataset_id=%s", dataset_id)
 
@@ -162,6 +181,9 @@ class DuckDBStore:
         # dataset_id is validated UUID-hex so direct interpolation is safe;
         # DuckDB doesn't accept ``?`` placeholders inside view definitions.
         c = self._c()
+        # Prefer the canonical HIN views. Legacy row-by-row ingests still
+        # populate nodes/edges directly; fast HIN ingests backfill them from
+        # contract tables. Either way projections see the same active_* shape.
         c.execute(
             f"CREATE OR REPLACE VIEW active_nodes AS "
             f"SELECT type, id, ts, attrs FROM nodes WHERE dataset_id = '{dataset_id}'"
@@ -169,6 +191,14 @@ class DuckDBStore:
         c.execute(
             f"CREATE OR REPLACE VIEW active_edges AS "
             f"SELECT type, src_id, dst_id, ts, attrs FROM edges WHERE dataset_id = '{dataset_id}'"
+        )
+        c.execute(
+            f"CREATE OR REPLACE VIEW active_hin_nodes AS "
+            f"SELECT * FROM hin_nodes WHERE dataset_id = '{dataset_id}'"
+        )
+        c.execute(
+            f"CREATE OR REPLACE VIEW active_hin_edges AS "
+            f"SELECT * FROM hin_edges WHERE dataset_id = '{dataset_id}'"
         )
         logger.debug("views scoped — dataset_id=%s", dataset_id)
         return DuckDbDatasetView(dataset_id=dataset_id, db_path=self._path)
@@ -312,6 +342,8 @@ class DuckDBStore:
             "  attrs      JSON"
             ")"
         )
+        self._init_contract_schema()
+        self._create_hin_views()
         existing = c.execute("SELECT value FROM meta WHERE key = 'storage_version'").fetchone()
         current = str(_STORAGE_VERSION)
         if existing is None:
@@ -321,3 +353,93 @@ class DuckDBStore:
                 f"store at {self._path} was written with storage_version={existing[0]}, "
                 f"but current is {current}. Delete the file and re-ingest."
             )
+
+    def _init_contract_schema(self) -> None:
+        c = self._c()
+        c.execute(
+            "CREATE TABLE IF NOT EXISTS contract_accounts ("
+            "  dataset_id TEXT NOT NULL, account_key TEXT NOT NULL, platform TEXT,"
+            "  github_id BIGINT, login TEXT, account_type TEXT, is_bot BOOLEAN,"
+            "  bot_confidence DOUBLE, bot_source TEXT, created_at TIMESTAMP, updated_at TIMESTAMP,"
+            "  profile_json JSON, observed_at TIMESTAMP, adapter_run_id TEXT,"
+            "  PRIMARY KEY (dataset_id, account_key)"
+            ")"
+        )
+        c.execute(
+            "CREATE TABLE IF NOT EXISTS contract_repositories ("
+            "  dataset_id TEXT NOT NULL, repo_key TEXT NOT NULL, platform TEXT, github_id BIGINT,"
+            "  full_name TEXT, owner_account_key TEXT, name TEXT, description TEXT,"
+            "  primary_language TEXT, is_fork BOOLEAN, forked_from_repo_key TEXT,"
+            "  default_branch TEXT, created_at TIMESTAMP, pushed_at TIMESTAMP, updated_at TIMESTAMP,"
+            "  archived_at TIMESTAMP, deleted_at TIMESTAMP, repo_json JSON, observed_at TIMESTAMP,"
+            "  adapter_run_id TEXT, PRIMARY KEY (dataset_id, repo_key)"
+            ")"
+        )
+        c.execute(
+            "CREATE TABLE IF NOT EXISTS contract_artifacts ("
+            "  dataset_id TEXT NOT NULL, artifact_key TEXT NOT NULL, platform TEXT, artifact_type TEXT,"
+            "  repo_key TEXT, parent_artifact_key TEXT, github_id BIGINT, node_id TEXT, number INTEGER,"
+            "  sha TEXT, url TEXT, title TEXT, state TEXT, body_text TEXT, body_text_hash TEXT,"
+            "  file_path TEXT, old_file_path TEXT, start_line INTEGER, end_line INTEGER,"
+            "  created_at TIMESTAMP, updated_at TIMESTAMP, closed_at TIMESTAMP, merged_at TIMESTAMP,"
+            "  artifact_json JSON, observed_at TIMESTAMP, adapter_run_id TEXT,"
+            "  PRIMARY KEY (dataset_id, artifact_key)"
+            ")"
+        )
+        c.execute(
+            "CREATE TABLE IF NOT EXISTS contract_relations ("
+            "  dataset_id TEXT NOT NULL, relation_key TEXT NOT NULL,"
+            "  source_node_key TEXT NOT NULL, source_node_type TEXT NOT NULL,"
+            "  target_node_key TEXT NOT NULL, target_node_type TEXT NOT NULL,"
+            "  relation_type TEXT NOT NULL, relation_subtype TEXT, directed BOOLEAN DEFAULT TRUE,"
+            "  occurred_at TIMESTAMP, observed_at TIMESTAMP, valid_from TIMESTAMP, valid_to TIMESTAMP,"
+            "  event_count INTEGER DEFAULT 1, weight DOUBLE DEFAULT 1.0, source_record_id TEXT,"
+            "  source_table TEXT, adapter_run_id TEXT, properties JSON,"
+            "  PRIMARY KEY (dataset_id, relation_key)"
+            ")"
+        )
+        c.execute(
+            "CREATE TABLE IF NOT EXISTS contract_adapter_manifest ("
+            "  adapter_run_id TEXT PRIMARY KEY, adapter_name TEXT, adapter_version TEXT, source_name TEXT,"
+            "  extracted_at TIMESTAMP, has_accounts BOOLEAN, has_repositories BOOLEAN, has_commits BOOLEAN,"
+            "  has_file_touches BOOLEAN, has_line_touches BOOLEAN, has_pull_requests BOOLEAN,"
+            "  has_pr_reviews BOOLEAN, has_issues BOOLEAN, has_comments BOOLEAN, has_stars BOOLEAN,"
+            "  has_watches BOOLEAN, has_forks BOOLEAN, has_follows BOOLEAN, has_mentions BOOLEAN,"
+            "  has_artifact_refs BOOLEAN, coverage_start TIMESTAMP, coverage_end TIMESTAMP,"
+            "  focal_repo_keys TEXT[], notes TEXT"
+            ")"
+        )
+
+    def _create_hin_views(self) -> None:
+        c = self._c()
+        c.execute(
+            "CREATE OR REPLACE VIEW hin_nodes AS "
+            "SELECT dataset_id, account_key AS node_id, 'user' AS node_type, account_type AS node_subtype, "
+            "       account_key AS natural_key, login AS display_name, created_at, updated_at, observed_at, "
+            "       FALSE AS is_stub, profile_json AS properties "
+            "FROM contract_accounts "
+            "UNION ALL "
+            "SELECT dataset_id, repo_key, 'repo', CASE WHEN is_fork THEN 'fork' ELSE 'repository' END, "
+            "       full_name, full_name, created_at, updated_at, observed_at, FALSE, repo_json "
+            "FROM contract_repositories "
+            "UNION ALL "
+            "SELECT dataset_id, artifact_key, 'artifact', artifact_type, artifact_key, "
+            "       coalesce(title, artifact_key), created_at, updated_at, observed_at, FALSE, artifact_json "
+            "FROM contract_artifacts"
+        )
+        c.execute(
+            "CREATE OR REPLACE VIEW hin_edges AS "
+            "SELECT r.dataset_id, r.relation_key AS edge_id, "
+            "       r.source_node_key AS source_node_id, "
+            "       CASE WHEN r.source_node_type = 'account' THEN 'user' ELSE r.source_node_type END AS source_node_type, "
+            "       sn.node_subtype AS source_node_subtype, "
+            "       r.target_node_key AS target_node_id, "
+            "       CASE WHEN r.target_node_type = 'account' THEN 'user' ELSE r.target_node_type END AS target_node_type, "
+            "       tn.node_subtype AS target_node_subtype, "
+            "       r.relation_type AS edge_type, r.relation_subtype, r.directed, "
+            "       r.occurred_at, r.observed_at, r.valid_from, r.valid_to, "
+            "       r.event_count, r.weight, r.adapter_run_id, r.source_record_id, r.properties "
+            "FROM contract_relations r "
+            "LEFT JOIN hin_nodes sn ON sn.dataset_id = r.dataset_id AND sn.node_id = r.source_node_key "
+            "LEFT JOIN hin_nodes tn ON tn.dataset_id = r.dataset_id AND tn.node_id = r.target_node_key"
+        )

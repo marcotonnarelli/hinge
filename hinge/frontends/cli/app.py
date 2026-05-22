@@ -34,9 +34,14 @@ console = Console()
 def ingest(
     path: Path = typer.Argument(..., exists=True, readable=True, help="Dataset file."),
     reader: str = typer.Option(..., "--reader", "-r", help="Reader name (e.g. numfocus)."),
+    fast_hin: bool = typer.Option(
+        False,
+        "--fast-hin",
+        help="Use DuckDB JSONL -> HIN contract-table ingest for NumFocus Actions files.",
+    ),
 ) -> None:
     """Read a dataset file, extract typed nodes/edges, persist to the DuckDB store."""
-    report = lib.ingest(path, reader=reader)
+    report = lib.ingest(path, reader=reader, fast_hin=fast_hin)
     console.print(
         f"[green]ingested[/green] {report.elements_read:,} elements "
         f"→ {report.nodes_upserted:,} nodes, {report.edges_upserted:,} edges "
