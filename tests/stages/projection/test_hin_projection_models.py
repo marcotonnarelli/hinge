@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 import duckdb
+import pytest
 
 from hinge.stages.projection.dbt_projection import DbtProjection
 from hinge.stages.projection.specs.dev_interaction import SPEC as DEV_INTERACTION
@@ -66,6 +67,26 @@ def test_dev_interaction_reads_canonical_hin_views(tmp_path):
         assert conn.execute("SELECT count(*) FROM int_developer_repo_affiliation").fetchone()[0] > 0
     finally:
         conn.close()
+
+
+def test_dev_interaction_rejects_missing_adapter_capability(tmp_path):
+    db_path = tmp_path / "projection.duckdb"
+    view = _seed_fast_hin_store(db_path)
+    conn = duckdb.connect(str(db_path))
+    try:
+        conn.execute(
+            "UPDATE contract_adapter_manifest SET has_pr_reviews = false "
+            "WHERE adapter_run_id = ?",
+            [DATASET_ID],
+        )
+    finally:
+        conn.close()
+
+    with pytest.raises(subprocess.CalledProcessError) as exc_info:
+        DbtProjection().run(DEV_INTERACTION, {}, view)
+
+    output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
+    assert "Missing capabilities: has_pr_reviews" in output
 
 
 def test_top_authors_by_closures_reads_canonical_hin_views(tmp_path):

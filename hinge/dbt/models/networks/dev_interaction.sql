@@ -65,6 +65,11 @@
 --   appears.
 -- ============================================================================
 
+{{ assert_recipe_supported(
+    'dev_interaction',
+    ['has_commits', 'has_pull_requests', 'has_pr_reviews', 'has_issues', 'has_comments']
+) }}
+
 WITH
 
 -- Collaborator pairs: users who share at least one active development repo.
