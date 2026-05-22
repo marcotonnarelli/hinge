@@ -1,0 +1,34 @@
+# dbt source declaration.
+#
+# DbtProjection creates two views before every dbt run:
+#   active_nodes — SELECT ... FROM nodes WHERE dataset_id = '<id>'
+#   active_edges — SELECT ... FROM edges WHERE dataset_id = '<id>'
+#
+# Reference these in projection SQL with:
+#   {{ source('hin', 'active_nodes') }}
+#   {{ source('hin', 'active_edges') }}
+#
+# Never reference `nodes` or `edges` directly — they contain all datasets.
+version: 2
+
+sources:
+  - name: hin
+    schema: main
+    tables:
+      - name: active_nodes
+        description: "View over nodes filtered to the active dataset_id."
+        columns:
+          - name: type
+            description: "NodeType — 'user', 'repo', 'artifact'."
+          - name: id
+          - name: ts
+          - name: attrs
+      - name: active_edges
+        description: "View over edges filtered to the active dataset_id."
+        columns:
+          - name: type
+            description: "EdgeType — 'opened', 'reviewed', etc."
+          - name: src_id
+          - name: dst_id
+          - name: ts
+          - name: attrs

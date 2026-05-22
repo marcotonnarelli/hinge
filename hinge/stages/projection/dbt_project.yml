@@ -1,0 +1,13 @@
+name: hin_projections
+version: "0.1.0"
+config-version: 2
+
+profile: hinge
+
+model-paths: ["models"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  hin_projections:
+    +materialized: table

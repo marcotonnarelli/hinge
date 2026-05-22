@@ -1,0 +1,42 @@
+# ─── HIN typed vocabulary — the single source of truth ────────────────────
+#
+# Editing this file is how you add or remove an allowed type label.
+#  - Bump ``schema_version`` whenever you change the vocabulary; existing
+#    DuckDB stores will refuse to open until re-ingested.
+#  - Stage code (readers, projections, exporters) treats labels as plain
+#    strings — there are no Python enums to update.
+#  - Projections may emit labels not listed here; only ingest-time validation
+#    is gated by this file. If a projection's new label should become a
+#    first-class part of the vocabulary, add it here and bump the version.
+
+schema_version: 1
+
+node_types:
+  - user
+  - repo
+  - artifact
+
+artifact_subtypes:
+  - pull_request
+  - issue
+  - push
+  - release
+  - wiki_page
+  - branch
+
+edge_types:
+  - opened
+  - reviewed
+  - commented_on
+  - review_commented_on
+  - merged
+  - closed
+  - reopened
+  - pushed
+  - commented_commits
+  - created_fork
+  - starred
+  - released
+  - wiki_edited
+  - member_of
+  - contains          # Repo -> Artifact structural edge

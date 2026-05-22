@@ -1,0 +1,9 @@
+# The DuckDB path is injected by DbtProjection at run time via the
+# HINGE_STORE_PATH env var — do NOT hard-code a path here.
+hinge:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('HINGE_STORE_PATH') }}"
+      threads: 4

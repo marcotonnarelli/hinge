@@ -1,0 +1,13 @@
+services:
+  hinge:
+    build: .
+    volumes:
+      - ./data:/data
+      - ./output:/output
+      - hinge-store:/store
+    environment:
+      HINGE_STORE_PATH: /store/network.duckdb
+      HINGE_LOG_LEVEL: INFO
+
+volumes:
+  hinge-store:

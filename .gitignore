@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# uv
+.venv/
+# uv.lock is intentionally committed — do NOT add it here
+
+# Type checking / linting caches
+.mypy_cache/
+.ruff_cache/
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# DuckDB store files (data, not code)
+*.duckdb
+*.duckdb.wal
+
+# Exported graphs (outputs, not source)
+*.gml
+*.graphml
+*.gexf
+*.dot
+out/
+output/
+
+# dbt build artefacts
+target/
+dbt_packages/
+logs/
+
+# Development dataset (large files — never commit)
+num_focus/
+
+# Local working notes — internal to the author, not the team
+architecture_decision.md
+
+# Docker
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.iml
