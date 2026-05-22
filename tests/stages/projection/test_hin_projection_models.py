@@ -13,6 +13,7 @@ from hinge.stages.projection.specs.follow_user_user import SPEC as FOLLOW_USER_U
 from hinge.stages.projection.specs.fork_repo_repo import SPEC as FORK_REPO_REPO
 from hinge.stages.projection.specs.issue_co_participation import SPEC as ISSUE_CO_PARTICIPATION
 from hinge.stages.projection.specs.pr_author_reviewer import SPEC as PR_AUTHOR_REVIEWER
+from hinge.stages.projection.specs.pr_participation import SPEC as PR_PARTICIPATION
 from hinge.stages.projection.specs.repo_shared_contributors import SPEC as REPO_SHARED_CONTRIBUTORS
 from hinge.stages.projection.specs.star_user_repo import SPEC as STAR_USER_REPO
 from hinge.stages.projection.specs.watch_user_repo import SPEC as WATCH_USER_REPO
@@ -145,6 +146,19 @@ def test_pr_author_reviewer_connects_pr_openers_to_reviewers(tmp_path):
     assert edges[0].dst_id == "gh:user:2"
     assert edges[0].attrs["pull_requests"] == ["gh:artifact:pull_request:100"]
     assert edges[0].attrs["directed"] is True
+
+
+def test_pr_participation_emits_user_pull_request_roles(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(PR_PARTICIPATION, {}, view)
+
+    by_user = {edge.src_id: edge for edge in handle.iter_edges()}
+    assert set(by_user) == {"gh:user:1", "gh:user:2", "gh:user:3"}
+    assert by_user["gh:user:1"].dst_id == "gh:artifact:pull_request:100"
+    assert by_user["gh:user:1"].attrs["roles"] == ["opened"]
+    assert "reviewed" in by_user["gh:user:2"].attrs["roles"]
+    assert "commented_on" in by_user["gh:user:3"].attrs["roles"]
 
 
 def test_repo_shared_contributors_projects_developer_repo_affiliation(tmp_path):
