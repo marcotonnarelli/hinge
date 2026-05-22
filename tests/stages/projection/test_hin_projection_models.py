@@ -8,6 +8,7 @@ import duckdb
 import pytest
 
 from hinge.stages.projection.dbt_projection import DbtProjection
+from hinge.stages.projection.specs.artifact_reference import SPEC as ARTIFACT_REFERENCE
 from hinge.stages.projection.specs.co_commit_user_user import SPEC as CO_COMMIT_USER_USER
 from hinge.stages.projection.specs.co_edit_file_user_user import SPEC as CO_EDIT_FILE_USER_USER
 from hinge.stages.projection.specs.dev_interaction import SPEC as DEV_INTERACTION
@@ -24,6 +25,7 @@ from hinge.stages.projection.specs.watch_user_repo import SPEC as WATCH_USER_REP
 from hinge.stages.store.duckdb_store import DuckDBStore
 
 FIXTURE = Path("tests/fixtures/numfocus_hin_synthetic.jsonl")
+COOKBOOK_CONTRACT_FIXTURE = Path("tests/fixtures/cookbook_contract_seed.sql")
 DATASET_ID = "0123456789abcdef0123456789abcdef"
 DBT_PROJECT_DIR = Path("hinge/dbt")
 
@@ -33,6 +35,22 @@ def _seed_fast_hin_store(path: Path):
     with store:
         store.begin_dataset(DATASET_ID, "numfocus-hin", str(FIXTURE))
         _, node_count, edge_count = store.ingest_numfocus_contracts(DATASET_ID, FIXTURE)
+        store.finalise_dataset(DATASET_ID, node_count, edge_count)
+        return store.scope_to_dataset(DATASET_ID)
+
+
+def _seed_cookbook_contract_store(path: Path):
+    sql = COOKBOOK_CONTRACT_FIXTURE.read_text().replace("$DATASET_ID", DATASET_ID)
+    store = DuckDBStore(path=path)
+    with store:
+        store.begin_dataset(DATASET_ID, "synthetic-contract", str(COOKBOOK_CONTRACT_FIXTURE))
+        store._c().execute(sql)
+        node_count = store._c().execute(
+            "SELECT count(*) FROM _store_hin_nodes WHERE dataset_id = ?", [DATASET_ID]
+        ).fetchone()[0]
+        edge_count = store._c().execute(
+            "SELECT count(*) FROM _store_hin_edges WHERE dataset_id = ?", [DATASET_ID]
+        ).fetchone()[0]
         store.finalise_dataset(DATASET_ID, node_count, edge_count)
         return store.scope_to_dataset(DATASET_ID)
 
@@ -59,6 +77,42 @@ def _run_dbt_models(db_path: Path, *models: str) -> None:
     )
 
 
+def test_artifact_reference_uses_contract_level_reference_edges(tmp_path):
+    view = _seed_cookbook_contract_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(ARTIFACT_REFERENCE, {}, view)
+
+    edges = list(handle.iter_edges())
+    assert len(edges) == 1
+    assert edges[0].type == "references"
+    assert edges[0].src_id == "gh:artifact:issue:1"
+    assert edges[0].dst_id == "gh:artifact:issue:2"
+    assert edges[0].attrs["recipe_name"] == "artifact_reference"
+
+
+def test_artifact_reference_rejects_missing_adapter_capability(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    with pytest.raises(subprocess.CalledProcessError) as exc_info:
+        DbtProjection().run(ARTIFACT_REFERENCE, {}, view)
+
+    output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
+    assert "Missing capabilities: has_artifact_refs" in output
+
+
+def test_co_commit_user_user_uses_contract_level_commit_artifacts(tmp_path):
+    view = _seed_cookbook_contract_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(CO_COMMIT_USER_USER, {}, view)
+
+    edges = list(handle.iter_edges())
+    assert len(edges) == 1
+    assert edges[0].type == "co_committed"
+    assert edges[0].src_id == "gh:user:1"
+    assert edges[0].dst_id == "gh:user:2"
+    assert edges[0].attrs["commits"] == ["gh:artifact:commit:c1"]
+
+
 def test_co_commit_user_user_rejects_missing_adapter_capability(tmp_path):
     view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
 
@@ -67,6 +121,19 @@ def test_co_commit_user_user_rejects_missing_adapter_capability(tmp_path):
 
     output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
     assert "Missing capabilities: has_commits" in output
+
+
+def test_co_edit_file_user_user_uses_contract_level_file_touches(tmp_path):
+    view = _seed_cookbook_contract_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(CO_EDIT_FILE_USER_USER, {}, view)
+
+    edges = list(handle.iter_edges())
+    assert len(edges) == 1
+    assert edges[0].type == "co_edited_file"
+    assert edges[0].src_id == "gh:user:1"
+    assert edges[0].dst_id == "gh:user:3"
+    assert edges[0].attrs["files"] == ["gh:artifact:file:src/app.py"]
 
 
 def test_co_edit_file_user_user_rejects_missing_adapter_capability(tmp_path):
@@ -118,6 +185,19 @@ def test_dev_interaction_rejects_missing_adapter_capability(tmp_path):
 
     output = f"{exc_info.value.output}\n{exc_info.value.stderr}"
     assert "Missing capabilities: has_pr_reviews" in output
+
+
+def test_follow_user_user_uses_contract_level_follow_edges(tmp_path):
+    view = _seed_cookbook_contract_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(FOLLOW_USER_USER, {}, view)
+
+    edges = list(handle.iter_edges())
+    assert len(edges) == 1
+    assert edges[0].type == "follows"
+    assert edges[0].src_id == "gh:user:1"
+    assert edges[0].dst_id == "gh:user:2"
+    assert edges[0].attrs["recipe_name"] == "follow_user_user"
 
 
 def test_follow_user_user_rejects_missing_adapter_capability(tmp_path):
@@ -245,6 +325,19 @@ def test_star_user_repo_slices_native_star_edges(tmp_path):
     assert edges[0].dst_id == "gh:repo:10"
     assert edges[0].attrs["recipe_name"] == "star_user_repo"
     assert edges[0].attrs["weight_kind"] == "binary"
+
+
+def test_watch_user_repo_uses_contract_level_watch_edges(tmp_path):
+    view = _seed_cookbook_contract_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(WATCH_USER_REPO, {}, view)
+
+    edges = list(handle.iter_edges())
+    assert len(edges) == 1
+    assert edges[0].type == "watches"
+    assert edges[0].src_id == "gh:user:1"
+    assert edges[0].dst_id == "gh:repo:10"
+    assert edges[0].attrs["recipe_name"] == "watch_user_repo"
 
 
 def test_watch_user_repo_rejects_missing_adapter_capability(tmp_path):

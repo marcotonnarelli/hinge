@@ -58,6 +58,7 @@ dbt = "hinge.stages.projection.dbt_projection:DbtProjection"
 # Symmetric with readers/exporters: third-party packages add new projections
 # the same way.
 [project.entry-points."hinge.projection_specs"]
+artifact-reference       = "hinge.stages.projection.specs.artifact_reference:SPEC"
 co-commit-user-user      = "hinge.stages.projection.specs.co_commit_user_user:SPEC"
 co-edit-file-user-user   = "hinge.stages.projection.specs.co_edit_file_user_user:SPEC"
 dev-interaction          = "hinge.stages.projection.specs.dev_interaction:SPEC"
