@@ -250,13 +250,13 @@ Four steps, no kernel changes required.
 
 Create `hinge/dbt/models/networks/<name>.sql`.
 
-Input: read from exactly two dbt sources — never touch `nodes`, `edges`, or
-unscoped contract tables directly (they contain all datasets; `active_hin_nodes` /
-`active_hin_edges` are already filtered to the requested `dataset_id` by the store).
+Input: read from canonical dbt HIN models — never touch `nodes`, `edges`, or
+unscoped contract tables directly (they contain all datasets; upstream HIN models
+are built from active views already filtered to the requested `dataset_id`).
 
 ```sql
-{{ source('hin', 'active_hin_nodes') }}   -- canonical HIN node view
-{{ source('hin', 'active_hin_edges') }}   -- canonical HIN edge view
+{{ ref('hin_nodes') }}   -- canonical HIN node model
+{{ ref('hin_edges') }}   -- canonical HIN edge model
 ```
 
 Output: the model **must** return exactly these columns in this order:

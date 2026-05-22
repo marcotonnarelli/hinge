@@ -29,8 +29,8 @@ user_closed_repos AS (
     SELECT DISTINCT
         ue.source_node_id AS user_id,
         ce.source_node_id AS repo_id
-    FROM {{ source('hin', 'active_hin_edges') }} AS ue
-    JOIN {{ source('hin', 'active_hin_edges') }} AS ce
+    FROM {{ ref('hin_edges') }} AS ue
+    JOIN {{ ref('hin_edges') }} AS ce
         ON  ce.target_node_id  = ue.target_node_id    -- same artifact
     WHERE ue.edge_type = 'closed'
       AND ue.source_node_type = 'user'

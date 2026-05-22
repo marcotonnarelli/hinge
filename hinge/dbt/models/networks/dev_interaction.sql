@@ -21,8 +21,8 @@
 -- ─── INPUT CONTRACT ─────────────────────────────────────────────────────────
 --   Every projection reads from exactly two dbt sources:
 --
---     {{ source('hin', 'active_hin_nodes') }}  canonical HIN node view
---     {{ source('hin', 'active_hin_edges') }}  canonical HIN edge view
+--     {{ ref('hin_nodes') }}  canonical HIN node model
+--     {{ ref('hin_edges') }}  canonical HIN edge model
 --
 --   The store (DuckDBStore) rewrites these views before each projection run
 --   to point at the requested dataset_id. Do NOT touch any other table.
@@ -74,8 +74,8 @@ user_repo AS (
     SELECT DISTINCT
         ue.source_node_id AS user_id,
         ce.source_node_id AS repo_id
-    FROM {{ source('hin', 'active_hin_edges') }} AS ue
-    JOIN {{ source('hin', 'active_hin_edges') }} AS ce
+    FROM {{ ref('hin_edges') }} AS ue
+    JOIN {{ ref('hin_edges') }} AS ce
         ON ce.target_node_id = ue.target_node_id
     WHERE ue.edge_type IN (
               'opened',

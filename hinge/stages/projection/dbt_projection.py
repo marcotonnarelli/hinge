@@ -83,7 +83,7 @@ class DbtProjection:
             "--profiles-dir",
             str(_DBT_PROJECT_DIR),
             "--select",
-            model,
+            f"+{model}",
         ]
         if params:
             cmd += ["--vars", json.dumps(params)]

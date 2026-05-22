@@ -80,13 +80,13 @@ and no changes to the kernel.
 
 ### Step 1 — Write the SQL model
 
-Create `hinge/dbt/models/networks/<name>.sql`. The model must read from
-the canonical HIN dbt sources and produce a fixed set of columns:
+Create `hinge/dbt/models/networks/<name>.sql`. The model should read from
+the canonical HIN dbt models and produce a fixed set of columns:
 
 ```sql
--- Inputs (always these two sources, never the raw tables)
-{{ source('hin', 'active_hin_nodes') }}
-{{ source('hin', 'active_hin_edges') }}
+-- Inputs (prefer these canonical HIN models, never the raw tables)
+{{ ref('hin_nodes') }}
+{{ ref('hin_edges') }}
 
 -- Output (every projection must produce exactly these columns)
 SELECT
@@ -98,9 +98,9 @@ SELECT
     attrs      JSON    -- any payload, use to_json({...})
 ```
 
-`active_hin_nodes` and `active_hin_edges` are views created by the store
-immediately before the projection runs — they are already filtered to the
-requested `dataset_id`, so the SQL never needs to reference `dataset_id` at all.
+The upstream HIN models are built from `active_*` views created by the store
+immediately before dbt runs — they are already filtered to the requested
+`dataset_id`, so network SQL never needs to reference `dataset_id` at all.
 
 **Nodes-only projections:** the pipeline derives output nodes from the union
 of `src_id` and `dst_id` in the result table. A projection that emits no
