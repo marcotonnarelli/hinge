@@ -1,6 +1,6 @@
 {{ config(materialized='table') }}
 
-{{ assert_recipe_supported('co_edit_file_user_user', ['has_commits', 'has_file_touches']) }}
+{{ assert_recipe_supported('co_edit_file_user_user') }}
 
 WITH file_touch_events AS (
     SELECT *

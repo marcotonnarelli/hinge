@@ -1,6 +1,6 @@
 {{ config(materialized='table') }}
 
-{{ assert_recipe_supported('artifact_reference', ['has_artifact_refs']) }}
+{{ assert_recipe_supported('artifact_reference') }}
 
 WITH reference_edges AS (
     {{ slice_edges(

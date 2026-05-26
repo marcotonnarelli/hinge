@@ -1,6 +1,6 @@
 {{ config(materialized='table') }}
 
-{{ assert_recipe_supported('issue_participation', ['has_issues', 'has_comments']) }}
+{{ assert_recipe_supported('issue_participation') }}
 
 WITH issue_events AS (
     SELECT *

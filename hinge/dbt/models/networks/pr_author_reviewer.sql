@@ -1,6 +1,6 @@
 {{ config(materialized='table') }}
 
-{{ assert_recipe_supported('pr_author_reviewer', ['has_pull_requests', 'has_pr_reviews']) }}
+{{ assert_recipe_supported('pr_author_reviewer') }}
 
 WITH pr_events AS (
     SELECT *

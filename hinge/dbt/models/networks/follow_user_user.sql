@@ -1,6 +1,6 @@
 {{ config(materialized='table') }}
 
-{{ assert_recipe_supported('follow_user_user', ['has_follows']) }}
+{{ assert_recipe_supported('follow_user_user') }}
 
 WITH follow_edges AS (
     {{ slice_edges(

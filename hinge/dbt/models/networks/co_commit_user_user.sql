@@ -1,6 +1,6 @@
 {{ config(materialized='table') }}
 
-{{ assert_recipe_supported('co_commit_user_user', ['has_commits']) }}
+{{ assert_recipe_supported('co_commit_user_user') }}
 
 WITH commit_events AS (
     SELECT *

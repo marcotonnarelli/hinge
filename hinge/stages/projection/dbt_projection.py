@@ -77,7 +77,19 @@ class DbtProjection:
         env = os.environ.copy()
         env["HINGE_STORE_PATH"] = str(db_path)
         env["DBT_PROFILES_DIR"] = str(_DBT_PROJECT_DIR)
-        cmd = [
+        seed_cmd = [
+            "dbt",
+            "seed",
+            "--project-dir",
+            str(_DBT_PROJECT_DIR),
+            "--profiles-dir",
+            str(_DBT_PROJECT_DIR),
+            "--select",
+            "ref_recipe_requirements",
+        ]
+        self._run_dbt(seed_cmd, env, "seed ref_recipe_requirements")
+
+        run_cmd = [
             "dbt",
             "run",
             "--project-dir",
@@ -88,8 +100,12 @@ class DbtProjection:
             f"+{model}",
         ]
         if params:
-            cmd += ["--vars", json.dumps(params)]
+            run_cmd += ["--vars", json.dumps(params)]
 
+        self._run_dbt(run_cmd, env, f"model {model!r}")
+        logger.info("dbt model %r materialised successfully", model)
+
+    def _run_dbt(self, cmd: list[str], env: dict[str, str], label: str) -> None:
         logger.debug("dbt invocation: %s", " ".join(cmd))
         result = subprocess.run(cmd, env=env, capture_output=True, text=True)
 
@@ -98,11 +114,10 @@ class DbtProjection:
         if result.returncode != 0:
             for line in result.stderr.splitlines():
                 logger.error("[dbt stderr] %s", line)
-            logger.error("dbt failed (exit %d) for model %r", result.returncode, model)
+            logger.error("dbt failed (exit %d) for %s", result.returncode, label)
             raise subprocess.CalledProcessError(
                 result.returncode, cmd, result.stdout, result.stderr
             )
-        logger.info("dbt model %r materialised successfully", model)
 
 
 class _CursorHandle:

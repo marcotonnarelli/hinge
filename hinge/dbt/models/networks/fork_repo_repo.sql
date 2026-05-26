@@ -1,6 +1,6 @@
 {{ config(materialized='table') }}
 
-{{ assert_recipe_supported('fork_repo_repo', ['has_forks']) }}
+{{ assert_recipe_supported('fork_repo_repo') }}
 
 WITH fork_edges AS (
     {{ slice_edges(

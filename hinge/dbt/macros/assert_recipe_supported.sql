@@ -1,11 +1,20 @@
-{% macro assert_recipe_supported(recipe_name, required_capabilities) %}
+{% macro assert_recipe_supported(recipe_name, required_capabilities=none) %}
     {% if execute %}
         {% set missing_query %}
-            WITH required(capability) AS (
-                VALUES
-                {%- for capability in required_capabilities %}
-                    ('{{ capability }}'){% if not loop.last %},{% endif %}
-                {%- endfor %}
+            WITH required AS (
+                {% if required_capabilities is none %}
+                    SELECT required_capability AS capability
+                    FROM ref_recipe_requirements
+                    WHERE recipe_name = '{{ recipe_name }}'
+                {% else %}
+                    SELECT capability
+                    FROM (
+                        VALUES
+                        {%- for capability in required_capabilities %}
+                            ('{{ capability }}'){% if not loop.last %},{% endif %}
+                        {%- endfor %}
+                    ) AS values_table(capability)
+                {% endif %}
             ),
 
             manifest AS (

@@ -1,6 +1,6 @@
 {{ config(materialized='table') }}
 
-{{ assert_recipe_supported('watch_user_repo', ['has_watches']) }}
+{{ assert_recipe_supported('watch_user_repo') }}
 
 WITH watch_edges AS (
     {{ slice_edges(

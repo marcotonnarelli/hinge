@@ -5,9 +5,14 @@ config-version: 2
 profile: hinge
 
 model-paths: ["models"]
+seed-paths: ["seeds"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
 
 models:
   hin_projections:
     +materialized: table
+
+seeds:
+  hin_projections:
+    +quote_columns: false

@@ -1,9 +1,6 @@
 {{ config(materialized='table') }}
 
-{{ assert_recipe_supported(
-    'repo_shared_contributors',
-    ['has_pull_requests', 'has_pr_reviews', 'has_issues', 'has_comments']
-) }}
+{{ assert_recipe_supported('repo_shared_contributors') }}
 
 WITH contributor_repo AS (
     SELECT

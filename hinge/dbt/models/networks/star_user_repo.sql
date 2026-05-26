@@ -1,6 +1,6 @@
 {{ config(materialized='table') }}
 
-{{ assert_recipe_supported('star_user_repo', ['has_stars']) }}
+{{ assert_recipe_supported('star_user_repo') }}
 
 WITH starred_edges AS (
     {{ slice_edges(

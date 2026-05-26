@@ -1,6 +1,6 @@
 {{ config(materialized='table') }}
 
-{{ assert_recipe_supported('user_mention_user', ['has_mentions', 'has_comments']) }}
+{{ assert_recipe_supported('user_mention_user') }}
 
 WITH authored_comments AS (
     SELECT

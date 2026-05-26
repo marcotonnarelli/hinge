@@ -1,9 +1,6 @@
 {{ config(materialized='table') }}
 
-{{ assert_recipe_supported(
-    'developer_repo_affiliation',
-    ['has_pull_requests', 'has_pr_reviews', 'has_issues', 'has_comments']
-) }}
+{{ assert_recipe_supported('developer_repo_affiliation') }}
 
 {{ network_edges(
     relation=ref('int_developer_repo_affiliation'),
