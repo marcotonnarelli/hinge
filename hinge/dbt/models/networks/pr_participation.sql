@@ -22,21 +22,19 @@ participation AS (
     GROUP BY left_node_id, right_node_id
 )
 
-SELECT
-    user_node_id AS src_id,
-    'user' AS src_type,
-    pr_node_id AS dst_id,
-    'artifact' AS dst_type,
-    'participated_in_pr' AS edge_type,
-    to_json({
-        'recipe_name': 'pr_participation',
-        'recipe_version': '1',
-        'directed': true,
-        'weight': weight,
-        'weight_kind': 'event_count',
-        'n_events': n_events,
-        'roles': roles,
-        'first_seen_at': first_seen_at,
-        'last_seen_at': last_seen_at
-    }) AS attrs
-FROM participation
+{{ network_edges(
+    relation='participation',
+    recipe_name='pr_participation',
+    source_node_id='user_node_id',
+    source_node_type="'user'",
+    target_node_id='pr_node_id',
+    target_node_type="'artifact'",
+    edge_type="'participated_in_pr'",
+    directed='true',
+    weight='weight',
+    weight_kind="'event_count'",
+    n_events='n_events',
+    first_seen_at='first_seen_at',
+    last_seen_at='last_seen_at',
+    properties="to_json({'roles': roles})"
+) }}

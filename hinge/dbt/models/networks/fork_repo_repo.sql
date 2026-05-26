@@ -10,20 +10,18 @@ WITH fork_edges AS (
     ) }}
 )
 
-SELECT
-    source_node_id AS src_id,
-    'repo' AS src_type,
-    target_node_id AS dst_id,
-    'repo' AS dst_type,
-    'fork_of' AS edge_type,
-    to_json({
-        'recipe_name': 'fork_repo_repo',
-        'recipe_version': '1',
-        'directed': true,
-        'weight': coalesce(weight, 1.0),
-        'weight_kind': 'binary',
-        'first_seen_at': occurred_at,
-        'last_seen_at': occurred_at,
-        'source_record_id': source_record_id
-    }) AS attrs
-FROM fork_edges
+{{ network_edges(
+    relation='fork_edges',
+    recipe_name='fork_repo_repo',
+    source_node_id='source_node_id',
+    source_node_type="'repo'",
+    target_node_id='target_node_id',
+    target_node_type="'repo'",
+    edge_type="'fork_of'",
+    directed='true',
+    weight='coalesce(weight, 1.0)',
+    weight_kind="'binary'",
+    first_seen_at='occurred_at',
+    last_seen_at='occurred_at',
+    properties="to_json({'source_record_id': source_record_id})"
+) }}

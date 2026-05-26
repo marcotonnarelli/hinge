@@ -13,11 +13,13 @@
 # 2. ``DbtProjection.run(spec, params, view)`` invokes dbt as a subprocess,
 #    pointed at ``view.db_path``, to materialise the model named by the spec.
 #
-# 3. The materialised result table MUST follow the output contract:
-#    rows are typed edges with columns
-#        (src_id TEXT, src_type TEXT, dst_id TEXT, dst_type TEXT,
-#         edge_type TEXT, attrs JSON)
-#    Read ``hinge/dbt/models/networks/dev_interaction.sql`` for the worked example.
+# 3. The materialised result table MUST follow the standard network contract:
+#        recipe_name, recipe_version, source_node_id, source_node_type,
+#        target_node_id, target_node_type, directed, edge_type, weight,
+#        weight_kind, n_contexts, n_events, first_seen_at, last_seen_at,
+#        time_bin, bot_policy, properties
+#    The cursor handle converts that richer dbt table into TypedEdge objects
+#    for existing exporters. Legacy src_id/dst_id/attrs tables are still read.
 #
 # 4. ``run`` returns a ``ProjectedGraphHandle`` that streams rows back from
 #    the materialised table. The exporter consumes the handle.
@@ -117,13 +119,23 @@ class _CursorHandle:
     def iter_nodes(self) -> Iterator[TypedNode]:
         conn = duckdb.connect(str(self._db_path), read_only=True)
         try:
-            cur = conn.execute(
-                f"SELECT DISTINCT id, type FROM ("
-                f"  SELECT src_id AS id, src_type AS type FROM {self._table_name}"
-                f"  UNION"
-                f"  SELECT dst_id AS id, dst_type AS type FROM {self._table_name}"
-                f")"
-            )
+            if self._uses_standard_network_schema(conn):
+                query = (
+                    f"SELECT DISTINCT id, type FROM ("
+                    f"  SELECT source_node_id AS id, source_node_type AS type FROM {self._table_name}"
+                    f"  UNION"
+                    f"  SELECT target_node_id AS id, target_node_type AS type FROM {self._table_name}"
+                    f")"
+                )
+            else:
+                query = (
+                    f"SELECT DISTINCT id, type FROM ("
+                    f"  SELECT src_id AS id, src_type AS type FROM {self._table_name}"
+                    f"  UNION"
+                    f"  SELECT dst_id AS id, dst_type AS type FROM {self._table_name}"
+                    f")"
+                )
+            cur = conn.execute(query)
             while True:
                 rows = cur.fetchmany(_FETCH_BATCH)
                 if not rows:
@@ -136,17 +148,67 @@ class _CursorHandle:
     def iter_edges(self) -> Iterator[TypedEdge]:
         conn = duckdb.connect(str(self._db_path), read_only=True)
         try:
-            cur = conn.execute(f"SELECT src_id, dst_id, edge_type, attrs FROM {self._table_name}")
-            while True:
-                rows = cur.fetchmany(_FETCH_BATCH)
-                if not rows:
-                    break
-                for src_id, dst_id, edge_type, attrs in rows:
-                    yield TypedEdge(
-                        type=edge_type,
-                        src_id=src_id,
-                        dst_id=dst_id,
-                        attrs=json.loads(attrs) if attrs else {},
-                    )
+            if self._uses_standard_network_schema(conn):
+                yield from self._iter_standard_edges(conn)
+            else:
+                yield from self._iter_legacy_edges(conn)
         finally:
             conn.close()
+
+    def _uses_standard_network_schema(self, conn: duckdb.DuckDBPyConnection) -> bool:
+        columns = {row[1] for row in conn.execute(f"PRAGMA table_info('{self._table_name}')").fetchall()}
+        return {
+            "source_node_id",
+            "source_node_type",
+            "target_node_id",
+            "target_node_type",
+            "recipe_name",
+            "properties",
+        }.issubset(columns)
+
+    def _iter_standard_edges(self, conn: duckdb.DuckDBPyConnection) -> Iterator[TypedEdge]:
+        cur = conn.execute(
+            f"""
+            SELECT
+                source_node_id,
+                target_node_id,
+                edge_type,
+                to_json({{
+                    'recipe_name': recipe_name,
+                    'recipe_version': recipe_version,
+                    'directed': directed,
+                    'weight': weight,
+                    'weight_kind': weight_kind,
+                    'n_contexts': n_contexts,
+                    'n_events': n_events,
+                    'first_seen_at': first_seen_at,
+                    'last_seen_at': last_seen_at,
+                    'time_bin': time_bin,
+                    'bot_policy': bot_policy
+                }}) AS standard_attrs,
+                properties
+            FROM {self._table_name}
+            """
+        )
+        while True:
+            rows = cur.fetchmany(_FETCH_BATCH)
+            if not rows:
+                break
+            for src_id, dst_id, edge_type, standard_attrs, properties in rows:
+                attrs = json.loads(standard_attrs) if standard_attrs else {}
+                attrs.update(json.loads(properties) if properties else {})
+                yield TypedEdge(type=edge_type, src_id=src_id, dst_id=dst_id, attrs=attrs)
+
+    def _iter_legacy_edges(self, conn: duckdb.DuckDBPyConnection) -> Iterator[TypedEdge]:
+        cur = conn.execute(f"SELECT src_id, dst_id, edge_type, attrs FROM {self._table_name}")
+        while True:
+            rows = cur.fetchmany(_FETCH_BATCH)
+            if not rows:
+                break
+            for src_id, dst_id, edge_type, attrs in rows:
+                yield TypedEdge(
+                    type=edge_type,
+                    src_id=src_id,
+                    dst_id=dst_id,
+                    attrs=json.loads(attrs) if attrs else {},
+                )

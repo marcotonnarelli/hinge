@@ -259,15 +259,27 @@ are built from active views already filtered to the requested `dataset_id`).
 {{ ref('hin_edges') }}   -- canonical HIN edge model
 ```
 
-Output: the model **must** return exactly these columns in this order:
+Output: use the `network_edges` macro so the model returns exactly these columns
+in this order:
 
 ```
-src_id     TEXT    stable node id — e.g. 'user:alice'
-src_type   TEXT    node label — e.g. 'user', 'repo', 'artifact'
-dst_id     TEXT    stable node id
-dst_type   TEXT    node label
-edge_type  TEXT    open string label — projections may invent new ones
-attrs      JSON    any payload, use DuckDB's to_json({...}) syntax
+recipe_name       TEXT
+recipe_version    TEXT
+source_node_id    TEXT    stable node id — e.g. 'user:alice'
+source_node_type  TEXT    node label — e.g. 'user', 'repo', 'artifact'
+target_node_id    TEXT    stable node id
+target_node_type  TEXT    node label
+directed          BOOLEAN
+edge_type         TEXT    open string label — projections may invent new ones
+weight            DOUBLE
+weight_kind       TEXT    binary | count | shared_count | event_count | event_weighted
+n_contexts        INTEGER
+n_events          INTEGER
+first_seen_at     TIMESTAMP
+last_seen_at      TIMESTAMP
+time_bin          TEXT
+bot_policy        TEXT
+properties        JSON    recipe-specific payload, use DuckDB's to_json({...}) syntax
 ```
 
 `DbtProjection` discovers the result table by the SQL file's stem (e.g.
@@ -275,12 +287,12 @@ attrs      JSON    any payload, use DuckDB's to_json({...}) syntax
 `TABLE` by default (`dbt_project.yml` sets this globally).
 
 **Output nodes are derived from edges.** `_CursorHandle.iter_nodes()` computes
-the node set as `SELECT DISTINCT src_id, src_type UNION SELECT dst_id, dst_type`
-from the result table. A projection that emits no edges therefore produces no
-nodes. For **nodes-only projections**, use **self-loop edges** (`src_id = dst_id`):
-the node appears in both sides of the union, the self-loop carries metadata in
-`attrs`, and downstream tools can drop it with
-`G.remove_edges_from(nx.selfloop_edges(G))`.
+the node set from `source_node_id/source_node_type` unioned with
+`target_node_id/target_node_type`. A projection that emits no edges therefore
+produces no nodes. For **nodes-only projections**, use **self-loop edges**
+(`source_node_id = target_node_id`): the node appears in both sides of the union,
+the self-loop carries metadata in `properties`, and downstream tools can drop it
+with `G.remove_edges_from(nx.selfloop_edges(G))`.
 
 See `hinge/dbt/models/networks/dev_interaction.sql` for a full worked example.
 

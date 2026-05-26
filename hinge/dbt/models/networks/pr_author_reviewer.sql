@@ -47,21 +47,20 @@ author_reviewer AS (
     GROUP BY openers.author_node_id, reviewers.reviewer_node_id
 )
 
-SELECT
-    author_node_id AS src_id,
-    'user' AS src_type,
-    reviewer_node_id AS dst_id,
-    'user' AS dst_type,
-    'reviewed_pr_from' AS edge_type,
-    to_json({
-        'recipe_name': 'pr_author_reviewer',
-        'recipe_version': '1',
-        'directed': true,
-        'weight': n_contexts,
-        'weight_kind': 'shared_count',
-        'pull_requests': pull_requests,
-        'n_events': n_events,
-        'first_seen_at': first_seen_at,
-        'last_seen_at': last_seen_at
-    }) AS attrs
-FROM author_reviewer
+{{ network_edges(
+    relation='author_reviewer',
+    recipe_name='pr_author_reviewer',
+    source_node_id='author_node_id',
+    source_node_type="'user'",
+    target_node_id='reviewer_node_id',
+    target_node_type="'user'",
+    edge_type="'reviewed_pr_from'",
+    directed='true',
+    weight='n_contexts',
+    weight_kind="'shared_count'",
+    n_contexts='n_contexts',
+    n_events='n_events',
+    first_seen_at='first_seen_at',
+    last_seen_at='last_seen_at',
+    properties="to_json({'pull_requests': pull_requests})"
+) }}

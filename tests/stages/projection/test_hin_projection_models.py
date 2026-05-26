@@ -33,6 +33,25 @@ FIXTURE = Path("tests/fixtures/numfocus_hin_synthetic.jsonl")
 COOKBOOK_CONTRACT_FIXTURE = Path("tests/fixtures/cookbook_contract_seed.sql")
 DATASET_ID = "0123456789abcdef0123456789abcdef"
 DBT_PROJECT_DIR = Path("hinge/dbt")
+STANDARD_NETWORK_COLUMNS = [
+    "recipe_name",
+    "recipe_version",
+    "source_node_id",
+    "source_node_type",
+    "target_node_id",
+    "target_node_type",
+    "directed",
+    "edge_type",
+    "weight",
+    "weight_kind",
+    "n_contexts",
+    "n_events",
+    "first_seen_at",
+    "last_seen_at",
+    "time_bin",
+    "bot_policy",
+    "properties",
+]
 
 
 def _seed_fast_hin_store(path: Path):
@@ -80,6 +99,21 @@ def _run_dbt_models(db_path: Path, *models: str) -> None:
         capture_output=True,
         text=True,
     )
+
+
+def test_cookbook_model_materializes_standard_network_schema(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+
+    handle = DbtProjection().run(STAR_USER_REPO, {}, view)
+
+    with duckdb.connect(str(view.db_path), read_only=True) as conn:
+        columns = [row[1] for row in conn.execute("PRAGMA table_info('star_user_repo')").fetchall()]
+
+    assert columns == STANDARD_NETWORK_COLUMNS
+    edge = next(handle.iter_edges())
+    assert edge.attrs["recipe_name"] == "star_user_repo"
+    assert edge.attrs["weight_kind"] == "binary"
+    assert "source_record_id" in edge.attrs
 
 
 def test_artifact_reference_uses_contract_level_reference_edges(tmp_path):

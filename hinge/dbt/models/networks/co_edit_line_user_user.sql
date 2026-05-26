@@ -30,21 +30,19 @@ co_edits AS (
     ) }}
 )
 
-SELECT
-    source_node_id AS src_id,
-    'user' AS src_type,
-    target_node_id AS dst_id,
-    'user' AS dst_type,
-    'co_edited_line' AS edge_type,
-    to_json({
-        'recipe_name': 'co_edit_line_user_user',
-        'recipe_version': '1',
-        'directed': false,
-        'weight': weight,
-        'weight_kind': weight_kind,
-        'shared_lines': n_contexts,
-        'line_spans': context_node_ids,
-        'first_seen_at': first_seen_at,
-        'last_seen_at': last_seen_at
-    }) AS attrs
-FROM co_edits
+{{ network_edges(
+    relation='co_edits',
+    recipe_name='co_edit_line_user_user',
+    source_node_id='source_node_id',
+    source_node_type="'user'",
+    target_node_id='target_node_id',
+    target_node_type="'user'",
+    edge_type="'co_edited_line'",
+    directed='false',
+    weight='weight',
+    weight_kind='weight_kind',
+    n_contexts='n_contexts',
+    first_seen_at='first_seen_at',
+    last_seen_at='last_seen_at',
+    properties="to_json({'shared_lines': n_contexts, 'line_spans': context_node_ids})"
+) }}

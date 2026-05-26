@@ -30,21 +30,19 @@ co_reviews AS (
     ) }}
 )
 
-SELECT
-    source_node_id AS src_id,
-    'user' AS src_type,
-    target_node_id AS dst_id,
-    'user' AS dst_type,
-    'co_reviewed_pr' AS edge_type,
-    to_json({
-        'recipe_name': 'pr_reviewer_coreview',
-        'recipe_version': '1',
-        'directed': false,
-        'weight': weight,
-        'weight_kind': weight_kind,
-        'shared_pull_requests': n_contexts,
-        'pull_requests': context_node_ids,
-        'first_seen_at': first_seen_at,
-        'last_seen_at': last_seen_at
-    }) AS attrs
-FROM co_reviews
+{{ network_edges(
+    relation='co_reviews',
+    recipe_name='pr_reviewer_coreview',
+    source_node_id='source_node_id',
+    source_node_type="'user'",
+    target_node_id='target_node_id',
+    target_node_type="'user'",
+    edge_type="'co_reviewed_pr'",
+    directed='false',
+    weight='weight',
+    weight_kind='weight_kind',
+    n_contexts='n_contexts',
+    first_seen_at='first_seen_at',
+    last_seen_at='last_seen_at',
+    properties="to_json({'shared_pull_requests': n_contexts, 'pull_requests': context_node_ids})"
+) }}

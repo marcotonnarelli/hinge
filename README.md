@@ -88,26 +88,33 @@ the canonical HIN dbt models and produce a fixed set of columns:
 {{ ref('hin_nodes') }}
 {{ ref('hin_edges') }}
 
--- Output (every projection must produce exactly these columns)
-SELECT
-    src_id     TEXT,   -- stable node id, e.g. 'user:alice'
-    src_type   TEXT,   -- node label, e.g. 'user'
-    dst_id     TEXT,
-    dst_type   TEXT,
-    edge_type  TEXT,   -- open label, e.g. 'collaborates_with'
-    attrs      JSON    -- any payload, use to_json({...})
+-- Output (prefer the network_edges macro; it emits this standard schema)
+network_edges(
+    recipe_name, recipe_version,
+    source_node_id, source_node_type,
+    target_node_id, target_node_type,
+    directed, edge_type,
+    weight, weight_kind,
+    n_contexts, n_events,
+    first_seen_at, last_seen_at,
+    time_bin, bot_policy,
+    properties
+)
 ```
+
+`DbtProjection` converts this richer schema into `TypedEdge` objects for existing
+exporters, merging standard fields and `properties` into edge attrs.
 
 The upstream HIN models are built from `active_*` views created by the store
 immediately before dbt runs — they are already filtered to the requested
 `dataset_id`, so network SQL never needs to reference `dataset_id` at all.
 
 **Nodes-only projections:** the pipeline derives output nodes from the union
-of `src_id` and `dst_id` in the result table. A projection that emits no
-edges will therefore produce no nodes either. The workaround is to use
-**self-loop edges** (`src_id = dst_id`): they make the nodes visible to the
-exporter, carry metadata in `attrs`, and can be filtered out in downstream
-tools with `G.remove_edges_from(nx.selfloop_edges(G))`.
+of `source_node_id` and `target_node_id` in the result table. A projection that
+emits no edges will therefore produce no nodes either. The workaround is to use
+**self-loop edges** (`source_node_id = target_node_id`): they make the nodes
+visible to the exporter, carry metadata in `properties`, and can be filtered out
+in downstream tools with `G.remove_edges_from(nx.selfloop_edges(G))`.
 
 See [dev_interaction.sql](hinge/dbt/models/networks/dev_interaction.sql)
 for a full working example with a documented input/output contract.

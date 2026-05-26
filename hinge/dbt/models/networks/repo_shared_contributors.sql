@@ -26,21 +26,19 @@ shared AS (
     ) }}
 )
 
-SELECT
-    source_node_id AS src_id,
-    'repo' AS src_type,
-    target_node_id AS dst_id,
-    'repo' AS dst_type,
-    'shared_contributors' AS edge_type,
-    to_json({
-        'recipe_name': 'repo_shared_contributors',
-        'recipe_version': '1',
-        'directed': false,
-        'weight': weight,
-        'weight_kind': weight_kind,
-        'shared_contributors': n_contexts,
-        'contributors': context_node_ids,
-        'first_seen_at': first_seen_at,
-        'last_seen_at': last_seen_at
-    }) AS attrs
-FROM shared
+{{ network_edges(
+    relation='shared',
+    recipe_name='repo_shared_contributors',
+    source_node_id='source_node_id',
+    source_node_type="'repo'",
+    target_node_id='target_node_id',
+    target_node_type="'repo'",
+    edge_type="'shared_contributors'",
+    directed='false',
+    weight='weight',
+    weight_kind='weight_kind',
+    n_contexts='n_contexts',
+    first_seen_at='first_seen_at',
+    last_seen_at='last_seen_at',
+    properties="to_json({'shared_contributors': n_contexts, 'contributors': context_node_ids})"
+) }}

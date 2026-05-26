@@ -10,21 +10,18 @@ WITH reference_edges AS (
     ) }}
 )
 
-SELECT
-    source_node_id AS src_id,
-    'artifact' AS src_type,
-    target_node_id AS dst_id,
-    'artifact' AS dst_type,
-    edge_type,
-    to_json({
-        'recipe_name': 'artifact_reference',
-        'recipe_version': '1',
-        'directed': true,
-        'weight': coalesce(weight, 1.0),
-        'weight_kind': 'binary',
-        'first_seen_at': occurred_at,
-        'last_seen_at': occurred_at,
-        'source_record_id': source_record_id,
-        'reference_type': edge_type
-    }) AS attrs
-FROM reference_edges
+{{ network_edges(
+    relation='reference_edges',
+    recipe_name='artifact_reference',
+    source_node_id='source_node_id',
+    source_node_type="'artifact'",
+    target_node_id='target_node_id',
+    target_node_type="'artifact'",
+    edge_type='edge_type',
+    directed='true',
+    weight='coalesce(weight, 1.0)',
+    weight_kind="'binary'",
+    first_seen_at='occurred_at',
+    last_seen_at='occurred_at',
+    properties="to_json({'source_record_id': source_record_id, 'reference_type': edge_type})"
+) }}

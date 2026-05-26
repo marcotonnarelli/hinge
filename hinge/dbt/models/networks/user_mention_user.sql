@@ -42,21 +42,19 @@ collapsed AS (
     ) }}
 )
 
-SELECT
-    source_node_id AS src_id,
-    'user' AS src_type,
-    target_node_id AS dst_id,
-    'user' AS dst_type,
-    'mentions_user' AS edge_type,
-    to_json({
-        'recipe_name': 'user_mention_user',
-        'recipe_version': '1',
-        'directed': true,
-        'weight': n_contexts,
-        'weight_kind': 'count',
-        'n_contexts': n_contexts,
-        'comments': context_node_ids,
-        'first_seen_at': first_seen_at,
-        'last_seen_at': last_seen_at
-    }) AS attrs
-FROM collapsed
+{{ network_edges(
+    relation='collapsed',
+    recipe_name='user_mention_user',
+    source_node_id='source_node_id',
+    source_node_type="'user'",
+    target_node_id='target_node_id',
+    target_node_type="'user'",
+    edge_type="'mentions_user'",
+    directed='true',
+    weight='n_contexts',
+    weight_kind="'count'",
+    n_contexts='n_contexts',
+    first_seen_at='first_seen_at',
+    last_seen_at='last_seen_at',
+    properties="to_json({'comments': context_node_ids})"
+) }}

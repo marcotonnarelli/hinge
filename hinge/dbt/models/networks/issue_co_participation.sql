@@ -32,21 +32,19 @@ co_participation AS (
     ) }}
 )
 
-SELECT
-    source_node_id AS src_id,
-    'user' AS src_type,
-    target_node_id AS dst_id,
-    'user' AS dst_type,
-    'co_participates_issue' AS edge_type,
-    to_json({
-        'recipe_name': 'issue_co_participation',
-        'recipe_version': '1',
-        'directed': false,
-        'weight': weight,
-        'weight_kind': weight_kind,
-        'shared_issues': n_contexts,
-        'issues': context_node_ids,
-        'first_seen_at': first_seen_at,
-        'last_seen_at': last_seen_at
-    }) AS attrs
-FROM co_participation
+{{ network_edges(
+    relation='co_participation',
+    recipe_name='issue_co_participation',
+    source_node_id='source_node_id',
+    source_node_type="'user'",
+    target_node_id='target_node_id',
+    target_node_type="'user'",
+    edge_type="'co_participates_issue'",
+    directed='false',
+    weight='weight',
+    weight_kind='weight_kind',
+    n_contexts='n_contexts',
+    first_seen_at='first_seen_at',
+    last_seen_at='last_seen_at',
+    properties="to_json({'shared_issues': n_contexts, 'issues': context_node_ids})"
+) }}

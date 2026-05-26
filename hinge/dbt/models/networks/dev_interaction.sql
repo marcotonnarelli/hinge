@@ -30,18 +30,17 @@
 --   dbt models unless the projection genuinely needs to be split.
 --
 -- ─── OUTPUT CONTRACT ────────────────────────────────────────────────────────
---   Every projection model MUST produce a table with exactly these columns,
---   in this order, with these types:
+--   Every projection model should use the network_edges macro. It emits the
+--   standard cookbook shape:
 --
---     src_id     TEXT     stable node id (e.g. 'user:torvalds')
---     src_type   TEXT     node label — any string; the vocabulary is open
---     dst_id     TEXT     stable node id
---     dst_type   TEXT     node label
---     edge_type  TEXT     edge label. Projections may introduce labels not
---                         listed in types.yaml; downstream stages treat
---                         labels as opaque strings.
---     attrs      JSON     any extra payload — weights, timestamps, counts.
---                         Use JSON-encoded objects, not raw maps.
+--     recipe_name, recipe_version,
+--     source_node_id, source_node_type, target_node_id, target_node_type,
+--     directed, edge_type,
+--     weight, weight_kind, n_contexts, n_events,
+--     first_seen_at, last_seen_at, time_bin, bot_policy, properties
+--
+--   DbtProjection converts this richer table into TypedEdge objects for the
+--   current exporter API, merging standard fields and properties into attrs.
 --
 --   The DbtProjection stage discovers the result table by its dbt model
 --   name (this file's stem, `dev_interaction`). dbt's default
@@ -84,16 +83,19 @@ collaborators AS (
     ) }}
 )
 
-SELECT
-    source_node_id                              AS src_id,
-    'user'                                     AS src_type,
-    target_node_id                              AS dst_id,
-    'user'                                     AS dst_type,
-    'collaborates_with'                        AS edge_type,
-    to_json({
-        'shared_repos': n_contexts,
-        'repos':        context_node_ids,
-        'weight':       weight,
-        'weight_kind':  weight_kind
-    })                                         AS attrs
-FROM collaborators
+{{ network_edges(
+    relation='collaborators',
+    recipe_name='dev_interaction',
+    source_node_id='source_node_id',
+    source_node_type="'user'",
+    target_node_id='target_node_id',
+    target_node_type="'user'",
+    edge_type="'collaborates_with'",
+    directed='false',
+    weight='weight',
+    weight_kind='weight_kind',
+    n_contexts='n_contexts',
+    first_seen_at='first_seen_at',
+    last_seen_at='last_seen_at',
+    properties="to_json({'shared_repos': n_contexts, 'repos': context_node_ids})"
+) }}
