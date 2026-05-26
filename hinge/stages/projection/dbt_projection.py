@@ -173,7 +173,9 @@ class _CursorHandle:
             conn.close()
 
     def _uses_standard_network_schema(self, conn: duckdb.DuckDBPyConnection) -> bool:
-        columns = {row[1] for row in conn.execute(f"PRAGMA table_info('{self._table_name}')").fetchall()}
+        columns = {
+            row[1] for row in conn.execute(f"PRAGMA table_info('{self._table_name}')").fetchall()
+        }
         return {
             "source_node_id",
             "source_node_type",

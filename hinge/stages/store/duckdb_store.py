@@ -467,10 +467,14 @@ class DuckDBStore:
         )
 
     def _drop_legacy_hin_view_if_present(self, name: str) -> None:
-        row = self._c().execute(
-            "SELECT table_type FROM information_schema.tables "
-            "WHERE table_schema = 'main' AND table_name = ?",
-            [name],
-        ).fetchone()
+        row = (
+            self._c()
+            .execute(
+                "SELECT table_type FROM information_schema.tables "
+                "WHERE table_schema = 'main' AND table_name = ?",
+                [name],
+            )
+            .fetchone()
+        )
         if row is not None and row[0] == "VIEW":
             self._c().execute(f"DROP VIEW {name}")

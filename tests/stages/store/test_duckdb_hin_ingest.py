@@ -23,16 +23,20 @@ def test_fast_numfocus_ingest_populates_contract_and_hin_views(tmp_path: Path) -
         assert nodes > 0
         assert edges > 0
 
-        contract_counts = store._c().execute(
-            """
+        contract_counts = (
+            store._c()
+            .execute(
+                """
             SELECT
               (SELECT count(*) FROM contract_accounts WHERE dataset_id = ?),
               (SELECT count(*) FROM contract_repositories WHERE dataset_id = ?),
               (SELECT count(*) FROM contract_artifacts WHERE dataset_id = ?),
               (SELECT count(*) FROM contract_relations WHERE dataset_id = ?)
             """,
-            [did, did, did, did],
-        ).fetchone()
+                [did, did, did, did],
+            )
+            .fetchone()
+        )
         assert contract_counts is not None
         assert all(count > 0 for count in contract_counts)
 
@@ -68,10 +72,19 @@ def test_scope_to_dataset_exposes_active_hin_views(tmp_path: Path) -> None:
         assert store._c().execute("SELECT count(*) FROM active_hin_nodes").fetchone()[0] == nodes
         assert store._c().execute("SELECT count(*) FROM active_hin_edges").fetchone()[0] == edges
         assert store._c().execute("SELECT count(*) FROM active_contract_accounts").fetchone()[0] > 0
-        assert store._c().execute("SELECT count(*) FROM active_contract_repositories").fetchone()[0] > 0
-        assert store._c().execute("SELECT count(*) FROM active_contract_artifacts").fetchone()[0] > 0
-        assert store._c().execute("SELECT count(*) FROM active_contract_relations").fetchone()[0] > 0
         assert (
-            store._c().execute("SELECT count(*) FROM active_contract_adapter_manifest").fetchone()[0]
+            store._c().execute("SELECT count(*) FROM active_contract_repositories").fetchone()[0]
+            > 0
+        )
+        assert (
+            store._c().execute("SELECT count(*) FROM active_contract_artifacts").fetchone()[0] > 0
+        )
+        assert (
+            store._c().execute("SELECT count(*) FROM active_contract_relations").fetchone()[0] > 0
+        )
+        assert (
+            store._c()
+            .execute("SELECT count(*) FROM active_contract_adapter_manifest")
+            .fetchone()[0]
             == 1
         )

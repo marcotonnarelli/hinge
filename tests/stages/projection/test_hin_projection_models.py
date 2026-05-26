@@ -69,12 +69,16 @@ def _seed_cookbook_contract_store(path: Path):
     with store:
         store.begin_dataset(DATASET_ID, "synthetic-contract", str(COOKBOOK_CONTRACT_FIXTURE))
         store._c().execute(sql)
-        node_count = store._c().execute(
-            "SELECT count(*) FROM _store_hin_nodes WHERE dataset_id = ?", [DATASET_ID]
-        ).fetchone()[0]
-        edge_count = store._c().execute(
-            "SELECT count(*) FROM _store_hin_edges WHERE dataset_id = ?", [DATASET_ID]
-        ).fetchone()[0]
+        node_count = (
+            store._c()
+            .execute("SELECT count(*) FROM _store_hin_nodes WHERE dataset_id = ?", [DATASET_ID])
+            .fetchone()[0]
+        )
+        edge_count = (
+            store._c()
+            .execute("SELECT count(*) FROM _store_hin_edges WHERE dataset_id = ?", [DATASET_ID])
+            .fetchone()[0]
+        )
         store.finalise_dataset(DATASET_ID, node_count, edge_count)
         return store.scope_to_dataset(DATASET_ID)
 
@@ -248,8 +252,7 @@ def test_dev_interaction_rejects_missing_adapter_capability(tmp_path):
     conn = duckdb.connect(str(db_path))
     try:
         conn.execute(
-            "UPDATE contract_adapter_manifest SET has_pr_reviews = false "
-            "WHERE adapter_run_id = ?",
+            "UPDATE contract_adapter_manifest SET has_pr_reviews = false WHERE adapter_run_id = ?",
             [DATASET_ID],
         )
     finally:
@@ -467,15 +470,10 @@ def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
         assert conn.execute("SELECT count(*) FROM hin_artifacts").fetchone()[0] > 0
         assert conn.execute("SELECT count(*) FROM hin_nodes").fetchone()[0] == 19
         assert conn.execute("SELECT count(*) FROM hin_edges").fetchone()[0] == 30
-        edge_types = {
-            row[0]
-            for row in conn.execute("SELECT edge_type FROM hin_edges").fetchall()
-        }
+        edge_types = {row[0] for row in conn.execute("SELECT edge_type FROM hin_edges").fetchall()}
         assert {"opened", "reviewed", "contains", "fork_of"}.issubset(edge_types)
         capabilities = dict(
-            conn.execute(
-                "SELECT capability, is_available FROM hin_capabilities"
-            ).fetchall()
+            conn.execute("SELECT capability, is_available FROM hin_capabilities").fetchall()
         )
         assert capabilities["has_pull_requests"] is True
         assert capabilities["has_commits"] is False
