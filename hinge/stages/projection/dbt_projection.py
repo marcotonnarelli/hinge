@@ -112,6 +112,8 @@ class DbtProjection:
         for line in result.stdout.splitlines():
             logger.debug("[dbt] %s", line)
         if result.returncode != 0:
+            for line in result.stdout.splitlines():
+                logger.error("[dbt stdout] %s", line)
             for line in result.stderr.splitlines():
                 logger.error("[dbt stderr] %s", line)
             logger.error("dbt failed (exit %d) for %s", result.returncode, label)
