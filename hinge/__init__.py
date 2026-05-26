@@ -1,3 +1,3 @@
-from hinge.frontends.lib import export, ingest, project
+from hinge.frontends.lib import export, export_sql_projection, ingest, project, project_sql
 
-__all__ = ["export", "ingest", "project"]
+__all__ = ["export", "export_sql_projection", "ingest", "project", "project_sql"]

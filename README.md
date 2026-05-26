@@ -169,6 +169,25 @@ uv run hinge export \
   -o output/result.gml
 ```
 
+### Local SQL custom projection
+
+For research-specific variants, write a local dbt model and run it without
+packaging or entry-points:
+
+```bash
+uv run hinge export-sql custom_star_user_repo.sql \
+  --dataset <id> \
+  --format gml \
+  -o output/custom.gml
+```
+
+The SQL file is temporarily added to the built-in dbt project, so it can use
+`ref('hin_edges')`, `ref('int_user_artifact_incidence')`, and all macros under
+`hinge/dbt/macros/`. It must still emit the standard `network_edges` schema.
+Use `--name valid_model_name` if the filename is not a valid dbt identifier.
+
+See [docs/custom-projections.md](docs/custom-projections.md).
+
 ---
 
 ## Logging

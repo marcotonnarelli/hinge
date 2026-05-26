@@ -37,8 +37,12 @@ import hashlib
 import json
 import logging
 import os
+import re
+import shutil
 import subprocess
+import tempfile
 from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -55,55 +59,105 @@ logger = logging.getLogger(__name__)
 
 _DBT_PROJECT_DIR = Path(__file__).parents[2] / "dbt"
 _FETCH_BATCH = 1_000
+_MODEL_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_HASH_SUFFIXES = {".sql", ".yml", ".yaml"}
+_IGNORED_DBT_DIRS = {"target", "dbt_packages", "logs"}
 
 
 class DbtProjection:
+    def __init__(
+        self,
+        custom_model_path: str | Path | None = None,
+        custom_model_name: str | None = None,
+    ) -> None:
+        self._custom_model_path = (
+            Path(custom_model_path).expanduser().resolve() if custom_model_path else None
+        )
+        if self._custom_model_path and not self._custom_model_path.is_file():
+            raise FileNotFoundError(self._custom_model_path)
+        self._custom_model_name = (
+            custom_model_name
+            if custom_model_name is not None
+            else self._custom_model_path.stem
+            if self._custom_model_path is not None
+            else None
+        )
+        if self._custom_model_name is not None:
+            _validate_model_name(self._custom_model_name)
+
     def run(
         self, spec: ProjectionSpec, params: dict[str, Any], view: DatasetView
     ) -> ProjectedGraphHandle:
+        if self._custom_model_name is not None and spec.model_name != self._custom_model_name:
+            raise ValueError(
+                "Custom projection spec model_name must match "
+                f"{self._custom_model_name!r}, got {spec.model_name!r}"
+            )
         self._invoke_dbt(spec.model_name, params, view.db_path)
         return _CursorHandle(view.db_path, spec.model_name)
 
     def fingerprint(self) -> EngineFingerprint:
         h = hashlib.sha256()
-        for p in sorted(_DBT_PROJECT_DIR.rglob("*")):
-            if p.is_file() and p.suffix in {".sql", ".yml", ".yaml"}:
-                h.update(p.read_bytes())
+        _hash_project_files(h, _DBT_PROJECT_DIR)
+        if self._custom_model_path is not None:
+            h.update(b"\0custom-model-name\0")
+            h.update((self._custom_model_name or "").encode())
+            h.update(b"\0custom-model-sql\0")
+            h.update(self._custom_model_path.read_bytes())
         return EngineFingerprint(engine="dbt-duckdb", project_hash=h.hexdigest())
 
     # ---- internals ----
 
     def _invoke_dbt(self, model: str, params: dict[str, Any], db_path: Path) -> None:
-        env = os.environ.copy()
-        env["HINGE_STORE_PATH"] = str(db_path)
-        env["DBT_PROFILES_DIR"] = str(_DBT_PROJECT_DIR)
-        seed_cmd = [
-            "dbt",
-            "seed",
-            "--project-dir",
-            str(_DBT_PROJECT_DIR),
-            "--profiles-dir",
-            str(_DBT_PROJECT_DIR),
-            "--select",
-            "ref_recipe_requirements",
-        ]
-        self._run_dbt(seed_cmd, env, "seed ref_recipe_requirements")
+        with self._project_dir() as project_dir:
+            env = os.environ.copy()
+            env["HINGE_STORE_PATH"] = str(db_path)
+            env["DBT_PROFILES_DIR"] = str(project_dir)
+            seed_cmd = [
+                "dbt",
+                "seed",
+                "--project-dir",
+                str(project_dir),
+                "--profiles-dir",
+                str(project_dir),
+                "--select",
+                "ref_recipe_requirements",
+            ]
+            self._run_dbt(seed_cmd, env, "seed ref_recipe_requirements")
 
-        run_cmd = [
-            "dbt",
-            "run",
-            "--project-dir",
-            str(_DBT_PROJECT_DIR),
-            "--profiles-dir",
-            str(_DBT_PROJECT_DIR),
-            "--select",
-            f"+{model}",
-        ]
-        if params:
-            run_cmd += ["--vars", json.dumps(params)]
+            run_cmd = [
+                "dbt",
+                "run",
+                "--project-dir",
+                str(project_dir),
+                "--profiles-dir",
+                str(project_dir),
+                "--select",
+                f"+{model}",
+            ]
+            if params:
+                run_cmd += ["--vars", json.dumps(params)]
 
-        self._run_dbt(run_cmd, env, f"model {model!r}")
-        logger.info("dbt model %r materialised successfully", model)
+            self._run_dbt(run_cmd, env, f"model {model!r}")
+            logger.info("dbt model %r materialised successfully", model)
+
+    @contextmanager
+    def _project_dir(self) -> Iterator[Path]:
+        if self._custom_model_path is None:
+            yield _DBT_PROJECT_DIR
+            return
+
+        with tempfile.TemporaryDirectory(prefix="hinge-dbt-") as tmp:
+            project_dir = Path(tmp) / "dbt"
+            shutil.copytree(
+                _DBT_PROJECT_DIR,
+                project_dir,
+                ignore=shutil.ignore_patterns(*_IGNORED_DBT_DIRS),
+            )
+            custom_dir = project_dir / "models" / "custom"
+            custom_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(self._custom_model_path, custom_dir / f"{self._custom_model_name}.sql")
+            yield project_dir
 
     def _run_dbt(self, cmd: list[str], env: dict[str, str], label: str) -> None:
         logger.debug("dbt invocation: %s", " ".join(cmd))
@@ -120,6 +174,22 @@ class DbtProjection:
             raise subprocess.CalledProcessError(
                 result.returncode, cmd, result.stdout, result.stderr
             )
+
+
+def _validate_model_name(model_name: str) -> None:
+    if not _MODEL_NAME_RE.match(model_name):
+        raise ValueError(
+            "dbt model names must be valid identifiers: start with a letter or underscore, "
+            "then use only letters, digits, and underscores"
+        )
+
+
+def _hash_project_files(h: Any, project_dir: Path) -> None:
+    for p in sorted(project_dir.rglob("*")):
+        if p.is_file() and p.suffix in _HASH_SUFFIXES and _IGNORED_DBT_DIRS.isdisjoint(p.parts):
+            h.update(p.relative_to(project_dir).as_posix().encode())
+            h.update(b"\0")
+            h.update(p.read_bytes())
 
 
 class _CursorHandle:

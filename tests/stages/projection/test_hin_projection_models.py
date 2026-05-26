@@ -7,6 +7,7 @@ from pathlib import Path
 import duckdb
 import pytest
 
+from hinge.kernel.projection.projection_spec import ProjectionSpec
 from hinge.stages.projection.dbt_projection import DbtProjection
 from hinge.stages.projection.specs.artifact_reference import SPEC as ARTIFACT_REFERENCE
 from hinge.stages.projection.specs.co_commit_user_user import SPEC as CO_COMMIT_USER_USER
@@ -403,6 +404,56 @@ def test_star_user_repo_slices_native_star_edges(tmp_path):
     assert edges[0].dst_id == "gh:repo:10"
     assert edges[0].attrs["recipe_name"] == "star_user_repo"
     assert edges[0].attrs["weight_kind"] == "binary"
+
+
+def test_custom_sql_projection_can_use_builtin_hin_macros(tmp_path):
+    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    custom_sql = tmp_path / "custom_star_user_repo.sql"
+    custom_sql.write_text(
+        """
+{{ config(materialized='table') }}
+
+WITH starred_edges AS (
+    {{ slice_edges(
+        edge_types=['starred'],
+        source_types=['user'],
+        target_types=['repo']
+    ) }}
+)
+
+{{ network_edges(
+    relation='starred_edges',
+    recipe_name='custom_star_user_repo',
+    source_node_id='source_node_id',
+    source_node_type="'user'",
+    target_node_id='target_node_id',
+    target_node_type="'repo'",
+    edge_type="'custom_starred'",
+    directed='true',
+    weight='coalesce(weight, 1.0)',
+    weight_kind="'binary'",
+    first_seen_at='occurred_at',
+    last_seen_at='occurred_at',
+    properties="to_json({'source_record_id': source_record_id})"
+) }}
+""".strip()
+    )
+    spec = ProjectionSpec(
+        name="custom-star-user-repo",
+        description="Custom local SQL projection",
+        model_name="custom_star_user_repo",
+        output_node_types=["user", "repo"],
+        output_edge_types=["custom_starred"],
+    )
+
+    handle = DbtProjection(custom_model_path=custom_sql).run(spec, {}, view)
+
+    edges = list(handle.iter_edges())
+    assert len(edges) == 1
+    assert edges[0].type == "custom_starred"
+    assert edges[0].src_id == "gh:user:4"
+    assert edges[0].dst_id == "gh:repo:10"
+    assert edges[0].attrs["recipe_name"] == "custom_star_user_repo"
 
 
 def test_user_mention_user_collapses_comment_mention_paths(tmp_path):
