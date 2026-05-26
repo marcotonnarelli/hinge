@@ -68,6 +68,27 @@ def export(
     )
 
 
+@app.command("export-sql")
+def export_sql(
+    sql: Path = typer.Argument(..., exists=True, readable=True, help="Custom dbt model SQL file."),
+    dataset: str = typer.Option(..., "--dataset", "-d", help="Dataset ID from a previous ingest."),
+    format_: str = typer.Option(..., "--format", "-f", help="Exporter name (e.g. gml)."),
+    output: Path = typer.Option(..., "--output", "-o", help="Output file."),
+    name: str | None = typer.Option(None, "--name", help="dbt model name; defaults to SQL stem."),
+) -> None:
+    """Run a local SQL projection that can use the built-in dbt HIN macros."""
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("wb") as sink:
+        receipt = lib.export_sql_projection(
+            sql_path=sql, dataset_id=dataset, fmt=format_, sink=sink, name=name
+        )
+    console.print(
+        f"[green]exported[/green] {receipt.node_count:,} nodes, "
+        f"{receipt.edge_count:,} edges → {output} "
+        f"(snapshot {receipt.snapshot_id[:12] if receipt.snapshot_id else '—'})"
+    )
+
+
 @list_app.command("datasets")
 def list_datasets() -> None:
     """Show all ingested datasets stored in the DuckDB file."""
