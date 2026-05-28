@@ -7,6 +7,24 @@ consumed by Gephi, NetworkX, igraph, etc.
 
 This is a research artefact accompanying an ICSME 2026 Tools and Data Showcase submission.
 
+## Installation
+
+`hinge` is available on PyPI:
+
+```bash
+pip install hinge
+```
+
+This installs the `hinge` CLI and exposes the package as a Python library:
+
+```python
+import hinge
+
+hinge.ingest(...)
+hinge.project(...)
+hinge.export(...)
+```
+
 ---
 
 ## Quick start
