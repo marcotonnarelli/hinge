@@ -205,6 +205,13 @@ Use `--name valid_model_name` if the filename is not a valid dbt identifier.
 
 See [docs/custom-projections.md](docs/custom-projections.md).
 
+### Third-party plugins
+
+Readers, exporters, projection specs, stores, and projection engines can be
+shipped as separate PyPI packages — `hinge` discovers them through standard
+Python entry-points, with no plugin API to learn beyond the kernel protocols.
+See [docs/plugins.md](docs/plugins.md) for the contract and a worked example.
+
 ---
 
 ## Logging
