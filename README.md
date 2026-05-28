@@ -37,8 +37,9 @@ Or via Docker:
 
 ```bash
 docker compose build
-docker compose run --rm hinge ingest /data/events.jsonl --reader numfocus
-docker compose run --rm hinge export \
+cp path/to/events.jsonl ./data/
+docker compose run --rm hinge hinge ingest /data/events.jsonl --reader numfocus
+docker compose run --rm hinge hinge export \
   --dataset <id> --projection user-user-repo-collaboration --format gml -o /output/graph.gml
 ```
 
