@@ -8,8 +8,24 @@ version = "0.1.0"
 description = "Heterogeneous Information Network tool for GitHub research datasets"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "MIT" }
-authors = [{ name = "Filippo Scaramuzza" }]
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Filippo Scaramuzza", email = "f.scaramuzza@tue.nl" },
+    { name = "Marco Tonnarelli", email = "m.tonnarelli@tue.nl" },
+    { name = "Gergő Bocsárdi", email = "a.g.bocsardi@tue.nl" },
+]
+keywords = ["github", "heterogeneous-information-network", "graph", "mining", "duckdb", "dbt"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 
 dependencies = [
     "pydantic>=2.7",
@@ -23,6 +39,11 @@ dependencies = [
     "networkx>=3.3",
     "pyarrow>=16.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/marcotonnarelli/hinge"
+Repository = "https://github.com/marcotonnarelli/hinge"
+Issues = "https://github.com/marcotonnarelli/hinge/issues"
 
 [project.optional-dependencies]
 tui = ["textual>=0.70"]
@@ -94,9 +115,20 @@ exclude = [
     "hinge/stages/projection/logs",
 ]
 
-[tool.hatch.build.targets.wheel.force-include]
-"hinge/config/types.yaml" = "hinge/config/types.yaml"
-"hinge/dbt" = "hinge/dbt"
+[tool.hatch.build.targets.sdist]
+include = [
+    "hinge",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+exclude = [
+    "hinge/dbt/target",
+    "hinge/dbt/logs",
+    "hinge/dbt/dbt_packages",
+    "hinge/stages/projection/target",
+    "hinge/stages/projection/logs",
+]
 
 # -------------------------------------------------------------------------
 # Tooling
