@@ -55,7 +55,7 @@ STANDARD_NETWORK_COLUMNS = [
 ]
 
 
-def _seed_fast_hin_store(path: Path):
+def _seed_numfocus_contract_store(path: Path):
     store = DuckDBStore(path=path)
     with store:
         store.begin_dataset(DATASET_ID, "numfocus-hin", str(FIXTURE))
@@ -107,7 +107,7 @@ def _run_dbt_models(db_path: Path, *models: str) -> None:
 
 
 def test_cookbook_model_materializes_standard_network_schema(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     handle = DbtProjection().run(STAR_USER_REPO, {}, view)
 
@@ -135,7 +135,7 @@ def test_artifact_reference_uses_contract_level_reference_edges(tmp_path):
 
 
 def test_artifact_reference_rejects_missing_adapter_capability(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         DbtProjection().run(ARTIFACT_REFERENCE, {}, view)
@@ -158,7 +158,7 @@ def test_co_commit_user_user_uses_contract_level_commit_artifacts(tmp_path):
 
 
 def test_co_commit_user_user_rejects_missing_adapter_capability(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         DbtProjection().run(CO_COMMIT_USER_USER, {}, view)
@@ -181,7 +181,7 @@ def test_co_edit_file_user_user_uses_contract_level_file_touches(tmp_path):
 
 
 def test_co_edit_file_user_user_rejects_missing_adapter_capability(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         DbtProjection().run(CO_EDIT_FILE_USER_USER, {}, view)
@@ -204,7 +204,7 @@ def test_co_edit_line_user_user_uses_contract_level_line_touches(tmp_path):
 
 
 def test_co_edit_line_user_user_rejects_missing_adapter_capability(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         DbtProjection().run(CO_EDIT_LINE_USER_USER, {}, view)
@@ -214,7 +214,7 @@ def test_co_edit_line_user_user_rejects_missing_adapter_capability(tmp_path):
 
 
 def test_developer_repo_affiliation_excludes_passive_star_watch_ties(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     handle = DbtProjection().run(DEVELOPER_REPO_AFFILIATION, {}, view)
 
@@ -228,7 +228,7 @@ def test_developer_repo_affiliation_excludes_passive_star_watch_ties(tmp_path):
 
 def test_dev_interaction_reads_canonical_hin_views(tmp_path):
     db_path = tmp_path / "projection.duckdb"
-    view = _seed_fast_hin_store(db_path)
+    view = _seed_numfocus_contract_store(db_path)
 
     handle = DbtProjection().run(DEV_INTERACTION, {}, view)
 
@@ -249,7 +249,7 @@ def test_dev_interaction_reads_canonical_hin_views(tmp_path):
 
 def test_dev_interaction_rejects_missing_adapter_capability(tmp_path):
     db_path = tmp_path / "projection.duckdb"
-    view = _seed_fast_hin_store(db_path)
+    view = _seed_numfocus_contract_store(db_path)
     conn = duckdb.connect(str(db_path))
     try:
         conn.execute(
@@ -280,7 +280,7 @@ def test_follow_user_user_uses_contract_level_follow_edges(tmp_path):
 
 
 def test_follow_user_user_rejects_missing_adapter_capability(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         DbtProjection().run(FOLLOW_USER_USER, {}, view)
@@ -290,7 +290,7 @@ def test_follow_user_user_rejects_missing_adapter_capability(tmp_path):
 
 
 def test_fork_repo_repo_slices_native_fork_edges(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     handle = DbtProjection().run(FORK_REPO_REPO, {}, view)
 
@@ -304,7 +304,7 @@ def test_fork_repo_repo_slices_native_fork_edges(tmp_path):
 
 
 def test_issue_co_participation_projects_users_over_shared_issues(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     handle = DbtProjection().run(ISSUE_CO_PARTICIPATION, {}, view)
 
@@ -318,7 +318,7 @@ def test_issue_co_participation_projects_users_over_shared_issues(tmp_path):
 
 
 def test_issue_participation_emits_user_issue_roles(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     handle = DbtProjection().run(ISSUE_PARTICIPATION, {}, view)
 
@@ -337,7 +337,7 @@ def test_issue_participation_emits_user_issue_roles(tmp_path):
 
 
 def test_pr_author_reviewer_connects_pr_openers_to_reviewers(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     handle = DbtProjection().run(PR_AUTHOR_REVIEWER, {}, view)
 
@@ -351,7 +351,7 @@ def test_pr_author_reviewer_connects_pr_openers_to_reviewers(tmp_path):
 
 
 def test_pr_participation_emits_user_pull_request_roles(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     handle = DbtProjection().run(PR_PARTICIPATION, {}, view)
 
@@ -365,7 +365,7 @@ def test_pr_participation_emits_user_pull_request_roles(tmp_path):
 
 
 def test_pr_reviewer_coreview_projects_reviewers_over_shared_prs(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     handle = DbtProjection().run(PR_REVIEWER_COREVIEW, {}, view)
 
@@ -379,7 +379,7 @@ def test_pr_reviewer_coreview_projects_reviewers_over_shared_prs(tmp_path):
 
 
 def test_repo_shared_contributors_projects_developer_repo_affiliation(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     handle = DbtProjection().run(REPO_SHARED_CONTRIBUTORS, {}, view)
 
@@ -393,7 +393,7 @@ def test_repo_shared_contributors_projects_developer_repo_affiliation(tmp_path):
 
 
 def test_star_user_repo_slices_native_star_edges(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     handle = DbtProjection().run(STAR_USER_REPO, {}, view)
 
@@ -407,7 +407,7 @@ def test_star_user_repo_slices_native_star_edges(tmp_path):
 
 
 def test_custom_sql_projection_can_use_builtin_hin_macros(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
     custom_sql = tmp_path / "custom_star_user_repo.sql"
     custom_sql.write_text(
         """
@@ -470,7 +470,7 @@ def test_user_mention_user_collapses_comment_mention_paths(tmp_path):
 
 
 def test_user_mention_user_rejects_missing_adapter_capability(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         DbtProjection().run(USER_MENTION_USER, {}, view)
@@ -493,7 +493,7 @@ def test_watch_user_repo_uses_contract_level_watch_edges(tmp_path):
 
 
 def test_watch_user_repo_rejects_missing_adapter_capability(tmp_path):
-    view = _seed_fast_hin_store(tmp_path / "projection.duckdb")
+    view = _seed_numfocus_contract_store(tmp_path / "projection.duckdb")
 
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         DbtProjection().run(WATCH_USER_REPO, {}, view)
@@ -504,7 +504,7 @@ def test_watch_user_repo_rejects_missing_adapter_capability(tmp_path):
 
 def test_typed_hin_models_materialize_from_active_contract_sources(tmp_path):
     db_path = tmp_path / "projection.duckdb"
-    _seed_fast_hin_store(db_path)
+    _seed_numfocus_contract_store(db_path)
 
     _run_dbt_models(db_path, "+hin_edges", "+hin_capabilities")
 

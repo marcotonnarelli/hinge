@@ -18,7 +18,7 @@ before changing code.
 uv sync --all-extras
 
 # 2. Ingest a dataset
-uv run hinge ingest path/to/events.jsonl --reader numfocus --fast-hin
+uv run hinge ingest path/to/events.jsonl --reader numfocus
 # → ingested 48 elements → 29 nodes, 19 edges (0 violations)
 # → Dataset ID: 78fc87c370944dc2b4a4e2d4bdd97ce1
 
@@ -60,15 +60,15 @@ source-specific adapter
   -> exporters
 ```
 
-`--fast-hin` is an example adapter for this repo's NumFocus Actions JSONL scrape.
-It is intentionally source-specific: it knows paths like `$.actor.login` and
-`$.details.pull_request.id`. Other data sources should implement their own
-adapter that writes the same `contract_*` tables; then the HIN views and dbt
-recipes can run unchanged.
+The `numfocus` reader uses a DuckDB adapter for this repo's NumFocus Actions
+JSONL scrape. It is intentionally source-specific: it knows paths like
+`$.actor.login` and `$.details.pull_request.id`. Other data sources should
+implement their own adapter that writes the same `contract_*` tables; then the
+HIN views and dbt recipes can run unchanged.
 
-The older Python `ReaderStage` path is still available for debugging and simple
-custom readers, but large JSONL ingests should use a DuckDB/SQL contract adapter
-where possible.
+The generic Python `ReaderStage` path is still available for simple custom
+readers, but large JSONL ingests should use a DuckDB/SQL contract adapter where
+possible.
 
 ---
 
@@ -201,13 +201,13 @@ Logs go to **stderr** by default. Use env vars to control verbosity and persiste
 
 ```bash
 # See all pipeline milestones (default)
-uv run hinge ingest events.jsonl
+uv run hinge ingest events.jsonl --reader numfocus
 
 # See every batch, dbt SQL, store open/close
-HINGE_LOG_LEVEL=DEBUG uv run hinge ingest events.jsonl
+HINGE_LOG_LEVEL=DEBUG uv run hinge ingest events.jsonl --reader numfocus
 
 # Persist a full debug log to disk (useful for long ingest runs)
-HINGE_LOG_FILE=hinge.log uv run hinge ingest events.jsonl
+HINGE_LOG_FILE=hinge.log uv run hinge ingest events.jsonl --reader numfocus
 tail -f hinge.log
 ```
 
@@ -216,10 +216,7 @@ tail -f hinge.log
 ## Common commands
 
 ```bash
-# Ingest via fast DuckDB -> HIN contract tables path (recommended for NumFocus Actions JSONL)
-uv run hinge ingest events.jsonl --reader numfocus --fast-hin
-
-# Ingest via portable Python reader path (slower, useful for debugging/custom readers)
+# Ingest NumFocus Actions JSONL via the DuckDB -> HIN contract adapter
 uv run hinge ingest events.jsonl --reader numfocus
 
 # Inspect stored datasets

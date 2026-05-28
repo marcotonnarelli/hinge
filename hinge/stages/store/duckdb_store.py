@@ -182,7 +182,7 @@ class DuckDBStore:
         # DuckDB doesn't accept ``?`` placeholders inside view definitions.
         c = self._c()
         # Prefer the canonical HIN views. Legacy row-by-row ingests still
-        # populate nodes/edges directly; fast HIN ingests backfill them from
+        # populate nodes/edges directly; contract adapters backfill them from
         # contract tables. Either way projections see the same active_* shape.
         c.execute(
             f"CREATE OR REPLACE VIEW active_nodes AS "
