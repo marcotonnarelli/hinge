@@ -1,13 +1,11 @@
-# hinge — Heterogeneous Information Network for Generalized Extraction 
+# HINGE — Heterogeneous Information Network for Generalized Extraction 
 
 `hinge` ingests GitHub activity datasets (JSONL today; CSV/Parquet planned), persists
 them as a typed multi-relational graph in DuckDB, and exposes **projections** —
 dbt SQL models that derive task-specific sub-graphs and export them to formats
 consumed by Gephi, NetworkX, igraph, etc.
 
-This is a research artefact accompanying an ICSME 2026 submission. Architecture
-and contributor rules are documented in [AGENTS.md](AGENTS.md). Read that file
-before changing code.
+This is a research artefact accompanying an ICSME 2026 Tools and Data Showcase submission.
 
 ---
 
