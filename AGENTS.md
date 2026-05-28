@@ -14,7 +14,7 @@ It is a research tool submitted to ICSME 2026. Correctness, reproducibility, and
 
 ## Architecture — read this first
 
-The paradigm is **microkernel + pipeline**. Full rationale is in `architecture_decision.md`. The short version:
+The paradigm is **microkernel + pipeline**. Full rationale is in `docs/architecture.md`. The short version:
 
 ```
 Frontends  →  kernel.runner  →  Pipeline: Reader → Store → Projection → Exporter
@@ -64,7 +64,8 @@ hinge/
 │   ├── projection/
 │   │   ├── dbt_projection.py    # DbtProjection (engine) → implements ProjectionStage
 │   │   └── specs/               # one module per ProjectionSpec — entry-point registered
-│   │       └── dev_interaction.py   # exposes SPEC = ProjectionSpec(...)
+│   │       ├── dev_interaction.py   # exposes SPEC = ProjectionSpec(...)
+│   │       └── ...                  # cookbook projections registered in pyproject.toml
 │   └── exporters/
 │       ├── gml_exporter.py      # GmlExporter    → implements ExporterStage
 │       ├── graphml_exporter.py  # GraphMlExporter (stub)
@@ -73,10 +74,10 @@ hinge/
 │       ├── jsonld_exporter.py   # JsonLdExporter (stub)
 │       └── dot_exporter.py      # DotExporter (stub)
 ├── frontends/
-│   ├── cli/            # Typer app; calls registry + runner
-│   ├── tui/            # Textual app; calls registry + runner
-│   ├── web/            # FastAPI app; calls registry + runner
-│   └── lib.py          # Public library facade: hinge.ingest(), hinge.export(), hinge.project()
+│   ├── cli/            # Typer app; calls frontends.lib
+│   ├── tui/            # placeholder package for future Textual app
+│   ├── web/            # placeholder package for future FastAPI app
+│   └── lib.py          # Public library facade: ingest(), export(), export_sql_projection(), list_*()
 ├── dbt/                # SQL representation layer: sources → HIN core → cookbook networks
 │   ├── models/
 │   │   ├── sources/    # active_* dbt source declarations
@@ -123,7 +124,7 @@ Each line is a flat JSON object — this is **not** standard GH Archive format:
 
 ```jsonc
 {
-  "action":     "OpenPullRequest",          // action type — maps directly to an EdgeType
+  "action":     "OpenPullRequest",          // action type — maps to an ingest-time edge label
   "event_id":   "19541248803",              // unique event id (string)
   "date":       "2022-01-01T00:14:19Z",     // ISO 8601 timestamp
   "actor":      { "id": 24376333, "login": "stefmolin" },   // → User node
@@ -141,7 +142,7 @@ Each line is a flat JSON object — this is **not** standard GH Archive format:
 
 `NumFocusReader` translates each `action` string into a `TypedEdge` between a `User` node and an `Artifact` or `Repo` node. The `Repo → contains → Artifact` structural edge is derived from the `repository` field present on every record.
 
-| `action` value | `EdgeType` | Src | Dst | Key `details` fields |
+| `action` value | Edge label | Src | Dst | Key `details` fields |
 |---|---|---|---|---|
 | `OpenPullRequest` | `opened` | User | Artifact (pull_request) | `details.pull_request.{id, number, title, state, created_date, …}` |
 | `OpenIssue` | `opened` | User | Artifact (issue) | `details.issue.{id, number, title, state, created_date, …}` |
@@ -391,22 +392,19 @@ prior **storage** layout must be rejected or migrated explicitly — see
 ```
 tests/
 ├── kernel/
-│   ├── test_schema.py      # Pydantic validation, SchemaVersion, NodeType/EdgeType membership
-│   └── test_registry.py    # Entry-point discovery, lookup API
-├── stages/
-│   ├── readers/
-│   │   └── test_numfocus_reader.py  # iter_elements() against fixture file, violation cases
-│   ├── store/
-│   │   └── test_duckdb.py  # upsert + query round-trip on :memory: DuckDB
-│   ├── projection/
-│   │   └── test_dev_interaction.py  # full dbt run on fixture store, assert edge types
-│   └── exporters/
-│       └── test_gml.py     # write() to BytesIO, parse output, assert node/edge counts
-├── frontends/
-│   └── test_lib.py         # integration: ingest fixture → project → export, assert receipt
-└── fixtures/
-    ├── events_10.jsonl     # 10 flat GH activity events used across tests
-    └── store_seed.sql      # SQL to pre-load a DuckDB :memory: for projection tests
+│   ├── test_schema.py         # Pydantic validation and open vocabulary behavior
+│   ├── test_registry.py       # Entry-point discovery, lookup API
+│   └── test_runner_ingest.py  # ingest runner behavior
+└── stages/
+    ├── readers/
+    │   └── test_numfocus_reader.py
+    ├── store/
+    │   ├── test_duckdb_store.py
+    │   └── test_duckdb_hin_ingest.py
+    ├── projection/
+    │   └── test_hin_projection_models.py
+    └── exporters/
+        └── test_gml.py
 ```
 
 ### Writing a reader test
@@ -414,7 +412,7 @@ tests/
 ```python
 # tests/stages/readers/test_numfocus_reader.py
 from pathlib import Path
-from hinge.kernel.schema import TypedNode, TypedEdge, NodeType, EdgeType
+from hinge.kernel.schema import TypedNode, TypedEdge
 from hinge.kernel.schema.schema_violation import SchemaViolation
 from hinge.stages.readers.numfocus_reader import NumFocusReader
 
@@ -435,12 +433,12 @@ def test_fixture_produces_nodes_and_edges():
 # tests/stages/exporters/test_gml.py
 import io
 from hinge.kernel.projection.projected_graph import ProjectedGraph
-from hinge.kernel.schema import NodeType, EdgeType, TypedNode, TypedEdge
+from hinge.kernel.schema import TypedNode, TypedEdge
 from hinge.stages.exporters.gml_exporter import GmlExporter
 
 def test_gml_node_count():
     handle = ProjectedGraph(
-        nodes=[TypedNode(type=NodeType.USER, id="user:alice")],
+        nodes=[TypedNode(type="user", id="user:alice")],
         edges=[],
     )
     sink = io.BytesIO()
@@ -453,16 +451,18 @@ def test_gml_node_count():
 ### Writing a projection test
 
 ```python
-# tests/stages/projection/test_dev_interaction.py
-from hinge.stages.store.duckdb_store import DuckDBStore
+# tests/stages/projection/test_<projection>.py
 from hinge.stages.projection.dbt_projection import DbtProjection
+from hinge.stages.projection.specs.dev_interaction import SPEC
+from hinge.stages.store.duckdb_store import DuckDBStore
 
 def test_dev_interaction_produces_user_edges(tmp_path):
-    # seed a store, then run the projection against it
     store = DuckDBStore(path=tmp_path / "test.duckdb")
-    # ... upsert fixture nodes/edges ...
-    proj = DbtProjection(db_path=tmp_path / "test.duckdb")
-    handle = proj.run("user-user-repo-collaboration", params={})
+    with store:
+        # ... begin_dataset(), seed fixture nodes/edges, finalise_dataset() ...
+        view = store.scope_to_dataset(dataset_id)
+
+    handle = DbtProjection().run(SPEC, {}, view)
     edges = list(handle.iter_edges())
     assert len(edges) > 0
 ```
