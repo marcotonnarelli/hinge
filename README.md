@@ -2,6 +2,16 @@
   <img src="docs/assets/logo.svg" alt="HINGE logo" width="200">
 </p>
 
+<p align="center">
+  <a href="https://pypi.org/project/hinge/"><img alt="PyPI" src="https://img.shields.io/pypi/v/hinge"></a>
+  <a href="https://pypi.org/project/hinge/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/hinge"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/pypi/l/hinge"></a>
+  <a href="https://github.com/astral-sh/ruff"><img alt="Ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json"></a>
+  <a href="https://github.com/astral-sh/uv"><img alt="uv" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json"></a>
+  <a href="https://mypy-lang.org/"><img alt="mypy" src="https://img.shields.io/badge/types-mypy-blue"></a>
+  <img alt="ICSME 2026" src="https://img.shields.io/badge/ICSME-2026-blueviolet">
+</p>
+
 # HINGE — Heterogeneous Information Network for Generalized Extraction 
 
 `hinge` ingests GitHub activity datasets (JSONL today; CSV/Parquet planned), persists
