@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/logo.svg" alt="HINGE logo" width="320">
+  <img src="docs/assets/logo.svg" alt="HINGE logo" width="200">
 </p>
 
 # HINGE — Heterogeneous Information Network for Generalized Extraction 
