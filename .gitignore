@@ -47,7 +47,7 @@ num_focus/
 architecture_decision.md
 
 # Docker
-.dockerignore
+# .dockerignore is intentionally committed for reproducible images.
 
 # OS
 .DS_Store

@@ -84,6 +84,13 @@ gml = "hinge.stages.exporters.gml_exporter:GmlExporter"
 # -------------------------------------------------------------------------
 [tool.hatch.build.targets.wheel]
 packages = ["hinge"]
+exclude = [
+    "hinge/dbt/target",
+    "hinge/dbt/logs",
+    "hinge/dbt/dbt_packages",
+    "hinge/stages/projection/target",
+    "hinge/stages/projection/logs",
+]
 
 [tool.hatch.build.targets.wheel.force-include]
 "hinge/config/types.yaml" = "hinge/config/types.yaml"
