@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="HINGE logo" width="320">
+</p>
+
 # HINGE — Heterogeneous Information Network for Generalized Extraction 
 
 `hinge` ingests GitHub activity datasets (JSONL today; CSV/Parquet planned), persists
