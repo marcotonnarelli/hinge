@@ -1,9 +1,9 @@
-"""Example DuckDB contract-table adapter for the NumFocus Actions JSONL format.
+"""DuckDB contract-table adapter for the NumFocus Actions JSONL format.
 
 This module is deliberately source-specific: it knows the JSON paths in the
 NumFocus scrape (``actor.login``, ``details.pull_request.id``, etc.) and maps
 those fields into the source-agnostic ``contract_*`` tables owned by
-``DuckDBStore``.
+``DuckDBStore``. It is the bulk-ingest engine behind ``NumFocusReader``.
 
 The reusable/core layer starts after this adapter has populated contract tables:
 ``contract_*`` -> canonical HIN views/models -> dbt projections. New data

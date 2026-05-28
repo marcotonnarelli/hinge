@@ -11,7 +11,6 @@ context manager; the surrounding ``with`` blocks make ownership obvious.
 
 from __future__ import annotations
 
-import uuid
 from pathlib import Path
 from typing import Any, BinaryIO, cast
 
@@ -24,34 +23,10 @@ from hinge.kernel.schema.hin_schema import HINSchema
 
 
 def ingest(path: str | Path, reader: str) -> IngestReport:
-    if reader == "numfocus":
-        return _ingest_numfocus_contracts(path)
-
     rdr = registry.get_reader(reader, path=path)
     schema = HINSchema.from_yaml(types_yaml_path())
     with registry.get_store() as store:
         return runner.run_ingest(rdr, store, schema)
-
-
-def _ingest_numfocus_contracts(path: str | Path) -> IngestReport:
-    dataset_id = uuid.uuid4().hex
-    with registry.get_store() as store:
-        store.begin_dataset(dataset_id, "numfocus-hin", str(path))
-        try:
-            record_count, node_count, edge_count = cast(Any, store).ingest_numfocus_contracts(
-                dataset_id, path
-            )
-            store.finalise_dataset(dataset_id, node_count, edge_count)
-        except BaseException:
-            store.discard_dataset(dataset_id)
-            raise
-    return IngestReport(
-        dataset_id=dataset_id,
-        elements_read=record_count,
-        nodes_upserted=node_count,
-        edges_upserted=edge_count,
-        violation_count=0,
-    )
 
 
 def export(

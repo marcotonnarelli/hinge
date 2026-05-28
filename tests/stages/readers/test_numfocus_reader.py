@@ -1,78 +1,60 @@
 from __future__ import annotations
 
+import uuid
 from pathlib import Path
 
 import pytest
 
-from hinge.kernel.schema import SchemaViolation, TypedEdge, TypedNode
+from hinge.kernel.protocols.reader_stage import BulkIngestReader
 from hinge.stages.readers.numfocus_reader import NumFocusReader
+from hinge.stages.store.duckdb_store import DuckDBStore
 
-FIXTURE = Path(__file__).parents[2] / "fixtures" / "events_10.jsonl"
-
-
-def _partition(
-    reader: NumFocusReader,
-) -> tuple[list[TypedNode], list[TypedEdge], list[SchemaViolation]]:
-    nodes, edges, violations = [], [], []
-    for el in reader.iter_elements():
-        if isinstance(el, TypedNode):
-            nodes.append(el)
-        elif isinstance(el, TypedEdge):
-            edges.append(el)
-        elif isinstance(el, SchemaViolation):
-            violations.append(el)
-    return nodes, edges, violations
+FIXTURE = Path(__file__).parents[2] / "fixtures" / "numfocus_hin_synthetic.jsonl"
 
 
-def test_fixture_produces_nodes_and_edges() -> None:
-    nodes, edges, violations = _partition(NumFocusReader(FIXTURE))
-    assert len(nodes) > 0
-    assert len(edges) > 0
-    assert violations == []
+def _did() -> str:
+    return uuid.uuid4().hex
 
 
-def test_user_nodes_have_correct_label() -> None:
-    nodes, _, _ = _partition(NumFocusReader(FIXTURE))
-    user_nodes = [n for n in nodes if n.type == "user"]
-    assert len(user_nodes) > 0
-    assert all(n.id.startswith("user:") for n in user_nodes)
+def test_satisfies_bulk_ingest_protocol() -> None:
+    assert isinstance(NumFocusReader(FIXTURE), BulkIngestReader)
 
 
-def test_open_pr_emits_opened_and_contains_edges() -> None:
-    _, edges, _ = _partition(NumFocusReader(FIXTURE))
-    edge_labels = {e.type for e in edges}
-    assert "opened" in edge_labels
-    assert "contains" in edge_labels
+def test_describe_reports_numfocus_hin_dataset() -> None:
+    desc = NumFocusReader(FIXTURE).describe()
+    assert desc.dataset == "numfocus-hin"
+    assert desc.format == "jsonl"
+    assert desc.byte_size > 0
 
 
-def test_star_targets_repo_directly() -> None:
-    _, edges, _ = _partition(NumFocusReader(FIXTURE))
-    starred = [e for e in edges if e.type == "starred"]
-    assert len(starred) > 0
-    assert all(e.dst_id.startswith("repo:") for e in starred)
+def test_bulk_ingest_populates_contract_and_graph_tables(tmp_path: Path) -> None:
+    did = _did()
+    reader = NumFocusReader(FIXTURE)
+    with DuckDBStore(path=tmp_path / "s.duckdb") as store:
+        store.begin_dataset(did, reader=reader.describe().dataset, path=str(FIXTURE))
+        records, nodes, edges = reader.bulk_ingest(store, did)
+        store.finalise_dataset(did, nodes, edges)
 
+        assert records == 14
+        assert nodes > 0
+        assert edges > 0
 
-def test_skipped_action_yields_nothing(tmp_path: Path) -> None:
-    f = tmp_path / "skip.jsonl"
-    f.write_bytes(b'{"action":"CreateBranch","actor":{},"repository":{}}\n')
-    nodes, edges, violations = _partition(NumFocusReader(f))
-    assert nodes == [] and edges == [] and violations == []
-
-
-def test_unknown_action_yields_violation(tmp_path: Path) -> None:
-    f = tmp_path / "bad.jsonl"
-    f.write_bytes(b'{"action":"AlienThing","actor":{"login":"x"},"repository":{"name":"o/r"}}\n')
-    _, _, violations = _partition(NumFocusReader(f))
-    assert len(violations) == 1
-    assert violations[0].code == "unknown_action"
-
-
-def test_format_inference_from_extension(tmp_path: Path) -> None:
-    content = FIXTURE.read_bytes()
-    f = tmp_path / "events.jsonl"
-    f.write_bytes(content)
-    nodes, _, _ = _partition(NumFocusReader(f))
-    assert len(nodes) > 0
+        contract_counts = (
+            store._c()
+            .execute(
+                """
+            SELECT
+              (SELECT count(*) FROM contract_accounts WHERE dataset_id = ?),
+              (SELECT count(*) FROM contract_repositories WHERE dataset_id = ?),
+              (SELECT count(*) FROM contract_artifacts WHERE dataset_id = ?),
+              (SELECT count(*) FROM contract_relations WHERE dataset_id = ?)
+            """,
+                [did, did, did, did],
+            )
+            .fetchone()
+        )
+        assert contract_counts is not None
+        assert all(count > 0 for count in contract_counts)
 
 
 def test_unknown_extension_raises(tmp_path: Path) -> None:

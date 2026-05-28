@@ -145,20 +145,6 @@ class DuckDBStore:
             )
         return len(n_rows) + len(e_rows)
 
-    def ingest_numfocus_contracts(
-        self, dataset_id: str, path: str | Path, *, limit: int | None = None
-    ) -> tuple[int, int, int]:
-        """Run the example fast DuckDB adapter for NumFocus Actions JSONL.
-
-        This is source-specific adapter logic, not core HIN logic. The store
-        owns the contract tables and HIN views; the adapter maps one raw source
-        format into those tables.
-        """
-        from hinge.stages.store import _numfocus_contract_adapter
-
-        self._require_dataset_id(dataset_id)
-        return _numfocus_contract_adapter.ingest(self._c(), dataset_id, path, limit=limit)
-
     def discard_dataset(self, dataset_id: str) -> None:
         """Remove every trace of a dataset. Called by the runner on ingest failure."""
         self._require_dataset_id(dataset_id)

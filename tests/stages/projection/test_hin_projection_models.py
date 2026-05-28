@@ -28,6 +28,7 @@ from hinge.stages.projection.specs.repo_shared_contributors import SPEC as REPO_
 from hinge.stages.projection.specs.star_user_repo import SPEC as STAR_USER_REPO
 from hinge.stages.projection.specs.user_mention_user import SPEC as USER_MENTION_USER
 from hinge.stages.projection.specs.watch_user_repo import SPEC as WATCH_USER_REPO
+from hinge.stages.readers.numfocus_reader import NumFocusReader
 from hinge.stages.store.duckdb_store import DuckDBStore
 
 FIXTURE = Path("tests/fixtures/numfocus_hin_synthetic.jsonl")
@@ -56,10 +57,11 @@ STANDARD_NETWORK_COLUMNS = [
 
 
 def _seed_numfocus_contract_store(path: Path):
+    reader = NumFocusReader(FIXTURE)
     store = DuckDBStore(path=path)
     with store:
-        store.begin_dataset(DATASET_ID, "numfocus-hin", str(FIXTURE))
-        _, node_count, edge_count = store.ingest_numfocus_contracts(DATASET_ID, FIXTURE)
+        store.begin_dataset(DATASET_ID, reader.describe().dataset, str(FIXTURE))
+        _, node_count, edge_count = reader.bulk_ingest(store, DATASET_ID)
         store.finalise_dataset(DATASET_ID, node_count, edge_count)
         return store.scope_to_dataset(DATASET_ID)
 

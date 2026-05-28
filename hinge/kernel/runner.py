@@ -31,7 +31,7 @@ from hinge.kernel.projection.projection_spec import ProjectionSpec
 from hinge.kernel.protocols.dataset_view import DatasetView
 from hinge.kernel.protocols.exporter_stage import ExporterStage, ExportReceipt
 from hinge.kernel.protocols.projection_stage import ProjectionStage
-from hinge.kernel.protocols.reader_stage import ReaderStage
+from hinge.kernel.protocols.reader_stage import BulkIngestReader, ReaderStage
 from hinge.kernel.protocols.store_stage import StoreStage
 from hinge.kernel.schema.hin_schema import HINSchema
 from hinge.kernel.schema.schema_violation import SchemaViolation
@@ -52,9 +52,15 @@ class IngestReport(BaseModel):
     violation_count: int
 
 
-def run_ingest(reader: ReaderStage, store: StoreStage, schema: HINSchema) -> IngestReport:
+def run_ingest(
+    reader: ReaderStage | BulkIngestReader, store: StoreStage, schema: HINSchema
+) -> IngestReport:
     """Read a dataset and persist it. Transactional: on any exception the
     half-written dataset is discarded so the store stays consistent.
+
+    Readers that implement ``bulk_ingest`` are dispatched through the bulk
+    path — schema validation is delegated to the reader because the records
+    never cross the Python boundary.
     """
     dataset_id = uuid.uuid4().hex
     desc = reader.describe()
@@ -67,6 +73,29 @@ def run_ingest(reader: ReaderStage, store: StoreStage, schema: HINSchema) -> Ing
         desc.byte_size / 1_048_576,
     )
 
+    store.begin_dataset(dataset_id, desc.dataset, str(desc.path))
+    if isinstance(reader, BulkIngestReader):
+        try:
+            records, nodes_total, edges_total = reader.bulk_ingest(store, dataset_id)
+            store.finalise_dataset(dataset_id, nodes_total, edges_total)
+        except BaseException:
+            logger.exception("ingest failed — discarding dataset_id=%s", dataset_id)
+            store.discard_dataset(dataset_id)
+            raise
+        logger.info(
+            "ingest complete (bulk) — dataset_id=%s nodes=%d edges=%d",
+            dataset_id,
+            nodes_total,
+            edges_total,
+        )
+        return IngestReport(
+            dataset_id=dataset_id,
+            elements_read=records,
+            nodes_upserted=nodes_total,
+            edges_upserted=edges_total,
+            violation_count=0,
+        )
+
     nodes_total = 0
     edges_total = 0
     violation_count = 0
@@ -74,7 +103,6 @@ def run_ingest(reader: ReaderStage, store: StoreStage, schema: HINSchema) -> Ing
     node_buf: list[TypedNode] = []
     edge_buf: list[TypedEdge] = []
 
-    store.begin_dataset(dataset_id, desc.dataset, str(desc.path))
     try:
         for element in reader.iter_elements():
             elements_read += 1
