@@ -208,15 +208,27 @@ class _CursorHandle:
         try:
             if self._uses_standard_network_schema(conn):
                 query = (
-                    f"SELECT DISTINCT id, type FROM ("
+                    f"WITH endpoints AS ("
                     f"  SELECT source_node_id AS id, source_node_type AS type FROM {self._table_name}"
                     f"  UNION"
                     f"  SELECT target_node_id AS id, target_node_type AS type FROM {self._table_name}"
-                    f")"
+                    f") "
+                    f"SELECT e.id, e.type, to_json({{"
+                    f"  'node_subtype': n.node_subtype,"
+                    f"  'natural_key': n.natural_key,"
+                    f"  'display_name': n.display_name,"
+                    f"  'created_at': n.created_at,"
+                    f"  'updated_at': n.updated_at,"
+                    f"  'observed_at': n.observed_at,"
+                    f"  'is_stub': n.is_stub,"
+                    f"  'properties': n.properties"
+                    f"}}) AS attrs "
+                    f"FROM endpoints AS e "
+                    f"LEFT JOIN hin_nodes AS n ON n.node_id = e.id"
                 )
             else:
                 query = (
-                    f"SELECT DISTINCT id, type FROM ("
+                    f"SELECT DISTINCT id, type, NULL AS attrs FROM ("
                     f"  SELECT src_id AS id, src_type AS type FROM {self._table_name}"
                     f"  UNION"
                     f"  SELECT dst_id AS id, dst_type AS type FROM {self._table_name}"
@@ -227,8 +239,11 @@ class _CursorHandle:
                 rows = cur.fetchmany(_FETCH_BATCH)
                 if not rows:
                     break
-                for id_, type_ in rows:
-                    yield TypedNode(type=type_, id=id_)
+                for id_, type_, attrs in rows:
+                    node_attrs = json.loads(attrs) if attrs else {}
+                    if isinstance(node_attrs.get("properties"), str):
+                        node_attrs["properties"] = json.loads(node_attrs["properties"])
+                    yield TypedNode(type=type_, id=id_, attrs=node_attrs)
         finally:
             conn.close()
 

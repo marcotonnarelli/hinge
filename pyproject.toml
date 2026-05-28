@@ -77,7 +77,9 @@ user-user-pr-co-review          = "hinge.stages.projection.specs.pr_reviewer_cor
 user-user-repo-collaboration    = "hinge.stages.projection.specs.dev_interaction:SPEC"
 
 [project.entry-points."hinge.exporters"]
+csv = "hinge.stages.exporters.csv_exporter:CsvExporter"
 gml = "hinge.stages.exporters.gml_exporter:GmlExporter"
+networkx = "hinge.stages.exporters.networkx_exporter:NetworkXExporter"
 
 # -------------------------------------------------------------------------
 # Hatch packaging
