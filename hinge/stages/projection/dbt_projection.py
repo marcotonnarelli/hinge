@@ -166,14 +166,38 @@ class DbtProjection:
         for line in result.stdout.splitlines():
             logger.debug("[dbt] %s", line)
         if result.returncode != 0:
-            for line in result.stdout.splitlines():
-                logger.error("[dbt stdout] %s", line)
             for line in result.stderr.splitlines():
-                logger.error("[dbt stderr] %s", line)
-            logger.error("dbt failed (exit %d) for %s", result.returncode, label)
+                logger.debug("[dbt stderr] %s", line)
+            logger.error(
+                "dbt failed (exit %d) for %s%s",
+                result.returncode,
+                label,
+                _summarize_dbt_failure(result.stdout, result.stderr),
+            )
             raise subprocess.CalledProcessError(
                 result.returncode, cmd, result.stdout, result.stderr
             )
+
+
+def _summarize_dbt_failure(stdout: str, stderr: str) -> str:
+    text = f"{stdout}\n{stderr}"
+    capability_failure = _extract_capability_failure(text)
+    if capability_failure:
+        return f": {capability_failure}"
+    return ""
+
+
+def _extract_capability_failure(text: str) -> str | None:
+    for line in text.splitlines():
+        if "Cannot build `" not in line or "Missing capabilities:" not in line:
+            continue
+        message = line.strip()
+        prefix = "Cannot build `"
+        prefix_index = message.find(prefix)
+        if prefix_index >= 0:
+            message = message[prefix_index:]
+        return message
+    return None
 
 
 def _validate_model_name(model_name: str) -> None:

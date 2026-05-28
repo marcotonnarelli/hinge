@@ -12,6 +12,8 @@ Usage:
 
 from __future__ import annotations
 
+import subprocess
+from contextlib import suppress
 from pathlib import Path
 
 import typer
@@ -59,8 +61,15 @@ def export(
 ) -> None:
     """Run a projection over a specific dataset and export the result."""
     output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("wb") as sink:
-        receipt = lib.export(projection_name=projection, dataset_id=dataset, fmt=format_, sink=sink)
+    try:
+        with output.open("wb") as sink:
+            receipt = lib.export(
+                projection_name=projection, dataset_id=dataset, fmt=format_, sink=sink
+            )
+    except subprocess.CalledProcessError as exc:
+        _remove_empty_output(output)
+        _print_process_error(exc)
+        raise typer.Exit(code=1) from None
     console.print(
         f"[green]exported[/green] {receipt.node_count:,} nodes, "
         f"{receipt.edge_count:,} edges → {output} "
@@ -78,15 +87,60 @@ def export_sql(
 ) -> None:
     """Run a local SQL projection that can use the built-in dbt HIN macros."""
     output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("wb") as sink:
-        receipt = lib.export_sql_projection(
-            sql_path=sql, dataset_id=dataset, fmt=format_, sink=sink, name=name
-        )
+    try:
+        with output.open("wb") as sink:
+            receipt = lib.export_sql_projection(
+                sql_path=sql, dataset_id=dataset, fmt=format_, sink=sink, name=name
+            )
+    except subprocess.CalledProcessError as exc:
+        _remove_empty_output(output)
+        _print_process_error(exc)
+        raise typer.Exit(code=1) from None
     console.print(
         f"[green]exported[/green] {receipt.node_count:,} nodes, "
         f"{receipt.edge_count:,} edges → {output} "
         f"(snapshot {receipt.snapshot_id[:12] if receipt.snapshot_id else '—'})"
     )
+
+
+def _print_process_error(exc: subprocess.CalledProcessError) -> None:
+    console.print(f"[red]error:[/red] {_process_error_message(exc)}")
+
+
+def _process_error_message(exc: subprocess.CalledProcessError) -> str:
+    text = f"{_process_text(exc.output)}\n{_process_text(exc.stderr)}"
+    capability_failure = _extract_capability_failure(text)
+    if capability_failure:
+        return capability_failure
+    return f"dbt failed with exit code {exc.returncode}. Set HINGE_LOG_LEVEL=DEBUG for details."
+
+
+def _process_text(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode(errors="replace")
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+
+def _extract_capability_failure(text: str) -> str | None:
+    for line in text.splitlines():
+        if "Cannot build `" not in line or "Missing capabilities:" not in line:
+            continue
+        message = line.strip()
+        prefix_index = message.find("Cannot build `")
+        if prefix_index >= 0:
+            message = message[prefix_index:]
+        return message.replace(". Missing capabilities:", ".\nMissing capabilities:")
+    return None
+
+
+def _remove_empty_output(path: Path) -> None:
+    with suppress(OSError):
+        if path.exists() and path.stat().st_size == 0:
+            path.unlink()
 
 
 @list_app.command("datasets")
